@@ -171,11 +171,15 @@ private fun generatePdfDocument(belts: List<Belt>): PdfDocument? {
         textPaint.textSize = 12f
         canvas.drawText("Belt: ${belt.length}mm", xPos + 5f, yPos + 18f, textPaint)
         
-        // Draw barcode (use belt ID instead of long barcode string to prevent squishing)
-        val barcode = BarcodeGenerator.generateCode128Barcode(belt.id, 200, 50)
+        // Draw Code128 barcode with just the belt length (shorter content prevents squishing)
+        val barcode = BarcodeGenerator.generateCode128Barcode(belt.length.toString(), 180, 60)
         barcode?.let {
-            canvas.drawBitmap(it, xPos + 37f, yPos + 25f, paint)
+            canvas.drawBitmap(it, xPos + 47f, yPos + 25f, paint)
         }
+        
+        // Draw the full barcode text below
+        textPaint.textSize = 9f
+        canvas.drawText(belt.barcode, xPos + 5f, yPos + 90f, textPaint)
         
         xPos += labelWidth + margin
     }
