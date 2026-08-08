@@ -130,8 +130,7 @@ private fun printBarcodeLabels(context: Context, belts: List<Belt>) {
 
 private fun generatePdfDocument(belts: List<Belt>): PdfDocument? {
     val pdfDocument = PdfDocument()
-    // Use landscape orientation for more width
-    val pageInfo = PdfDocument.PageInfo.Builder(842, 595, 1).create() // A4 landscape
+    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4 portrait
     var page = pdfDocument.startPage(pageInfo)
     var canvas = page.canvas
     
@@ -142,10 +141,10 @@ private fun generatePdfDocument(belts: List<Belt>): PdfDocument? {
     
     var xPos = 20f
     var yPos = 20f
-    val labelWidth = 400f
-    val labelHeight = 80f
+    val labelWidth = 275f
+    val labelHeight = 100f
     val labelsPerRow = 2
-    val margin = 15f
+    val margin = 20f
     
     belts.forEachIndexed { index, belt ->
         if (index > 0 && index % labelsPerRow == 0) {
@@ -153,7 +152,7 @@ private fun generatePdfDocument(belts: List<Belt>): PdfDocument? {
             yPos += labelHeight + margin
         }
         
-        if (yPos + labelHeight > 570f) {
+        if (yPos + labelHeight > 820f) {
             pdfDocument.finishPage(page)
             page = pdfDocument.startPage(pageInfo)
             canvas = page.canvas
@@ -172,15 +171,11 @@ private fun generatePdfDocument(belts: List<Belt>): PdfDocument? {
         textPaint.textSize = 12f
         canvas.drawText("Belt: ${belt.length}mm", xPos + 5f, yPos + 18f, textPaint)
         
-        // Draw barcode (wider to prevent squishing)
-        val barcode = BarcodeGenerator.generateCode128Barcode(belt.barcode, 350, 40)
+        // Draw barcode (use belt ID instead of long barcode string to prevent squishing)
+        val barcode = BarcodeGenerator.generateCode128Barcode(belt.id, 200, 50)
         barcode?.let {
-            canvas.drawBitmap(it, xPos + 25f, yPos + 25f, paint)
+            canvas.drawBitmap(it, xPos + 37f, yPos + 25f, paint)
         }
-        
-        // Draw barcode text (larger font and more space)
-        textPaint.textSize = 10f
-        canvas.drawText(belt.barcode, xPos + 5f, yPos + 65f, textPaint)
         
         xPos += labelWidth + margin
     }

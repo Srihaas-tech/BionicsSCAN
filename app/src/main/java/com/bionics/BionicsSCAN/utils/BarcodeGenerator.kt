@@ -18,12 +18,10 @@ object BarcodeGenerator {
         try {
             val writer = Code128Writer()
             val hints = EnumMap<EncodeHintType, Any>(EncodeHintType::class.java)
-            hints[EncodeHintType.MARGIN] = 0
+            hints[EncodeHintType.MARGIN] = 2
             
-            // Calculate minimum width needed for the content to prevent squishing
-            // Code128 needs approximately 11 modules per character, each module should be at least 3 pixels for readability
-            val minWidth = (content.length + 3) * 11 * 4 // +3 for start/stop/check characters, 4 pixels per module
-            val actualWidth = maxOf(width, minWidth)
+            // Use a fixed, generous width to ensure readability
+            val actualWidth = maxOf(width, 300)
             
             val bitMatrix = writer.encode(content, BarcodeFormat.CODE_128, actualWidth, height, hints)
             
