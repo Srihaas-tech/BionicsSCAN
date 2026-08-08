@@ -41,6 +41,9 @@ android {
             excludes += "/META-INF/DEPENDENCIES"
         }
     }
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
 }
 
 dependencies {
