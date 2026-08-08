@@ -44,7 +44,7 @@ class SheetsService(credentialsStream: InputStream) {
         
         try {
             val response = sheets!!.spreadsheets().values()
-                .get(spreadsheetId, "${inventoryType.sheetName}!A2:B")
+                .get(spreadsheetId, "${inventoryType.sheetName}!A2:C")
                 .execute()
             
             val values = response.getValues()
@@ -53,7 +53,7 @@ class SheetsService(credentialsStream: InputStream) {
                     id = "${index + 1}",
                     length = row[0].toString().toInt(),
                     quantity = row[1].toString().toInt(),
-                    barcode = "ITEM-${row[0]}",
+                    barcode = if (row.size > 2) row[2].toString() else "ITEM-${row[0]}",
                     inventoryType = inventoryType
                 )
             } ?: emptyList()
