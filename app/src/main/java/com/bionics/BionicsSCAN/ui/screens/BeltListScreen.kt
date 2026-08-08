@@ -5,8 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-
-
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.CloudOff
@@ -20,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bionics.BionicsSCAN.data.Belt
+import com.bionics.BionicsSCAN.data.InventoryType
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,13 +33,14 @@ fun BeltListScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val selectedType by viewModel.selectedInventoryType.collectAsState()
     
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("FRC Belt Inventory")
+                        Text("FRC Inventory")
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
                             imageVector = if (isSyncing) Icons.Default.CloudSync else Icons.Default.CloudOff,
@@ -68,46 +68,65 @@ fun BeltListScreen(
             )
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when {
-                isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
+            TabRow(
+                selectedTabIndex = InventoryType.entries.indexOf(selectedType),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                InventoryType.entries.forEach { type ->
+                    Tab(
+                        selected = selectedType == type,
+                        onClick = { viewModel.setInventoryType(type) },
+                        text = { Text(type.displayName, fontSize = MaterialTheme.typography.labelMedium.fontSize) }
                     )
                 }
-                error != null -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(error!!, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.loadBelts() }) {
-                            Text("Retry")
+            }
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(0.dp)
+            ) {
+                when {
+                    isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    error != null -> {
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(error!!, color = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { viewModel.loadBelts() }) {
+                                Text("Retry")
+                            }
                         }
                     }
-                }
-                belts.isEmpty() -> {
-                    Text(
-                        "No belts found",
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(belts) { belt ->
-                            BeltItem(
-                                belt = belt,
-                                onClick = { onBeltClick(belt) }
-                            )
+                    belts.isEmpty() -> {
+                        Text(
+                            "No items found",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(belts) { belt ->
+                                BeltItem(
+                                    belt = belt,
+                                    onClick = { onBeltClick(belt) }
+                                )
+                            }
                         }
                     }
                 }

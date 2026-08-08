@@ -1,6 +1,7 @@
 package com.bionics.BionicsSCAN.service
 
 import com.bionics.BionicsSCAN.data.Belt
+import com.bionics.BionicsSCAN.data.InventoryType
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.sheets.v4.Sheets
@@ -13,7 +14,6 @@ import java.io.InputStream
 class SheetsService(credentialsStream: InputStream) {
     
     private val spreadsheetId: String = "1Wpepi5tsE-ykRRbyr1Pmk4KWreHNp-jAN8OoycMNLn8"
-    private val sheetName: String = "'Belt Inventory 9mm'"
     
     // Read credentials into a byte array to prevent stream closure issues
     private val credentialsBytes: ByteArray = credentialsStream.readBytes()
@@ -37,33 +37,39 @@ class SheetsService(credentialsStream: InputStream) {
         }
     }
     
-    suspend fun getAllBelts(): Result<List<Belt>> = withContext(Dispatchers.IO) {
+    suspend fun getAllBeltsByType(inventoryType: InventoryType): Result<List<Belt>> = withContext(Dispatchers.IO) {
         if (sheets == null) {
             return@withContext Result.failure(Exception(initializationError ?: "Google Sheets service not initialized"))
         }
         
         try {
             val response = sheets!!.spreadsheets().values()
-                .get(spreadsheetId, "$sheetName!A2:B")
+                .get(spreadsheetId, "${inventoryType.sheetName}!A2:B")
                 .execute()
             
             val values = response.getValues()
-            val belts = values?.mapIndexed { index, row ->
+            val items = values?.mapIndexed { index, row ->
                 Belt(
                     id = "${index + 1}",
                     length = row[0].toString().toInt(),
                     quantity = row[1].toString().toInt(),
-                    barcode = "BELT-${row[0]}"
+                    barcode = "ITEM-${row[0]}",
+                    inventoryType = inventoryType
                 )
             } ?: emptyList()
             
-            Result.success(belts)
+            Result.success(items)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
     
-    suspend fun updateBeltQuantity(beltId: String, newQuantity: Int): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun getAllBelts(): Result<List<Belt>> = withContext(Dispatchers.IO) {
+        // For backward compatibility, fetch from Belt 9mm
+        return@withContext getAllBeltsByType(InventoryType.BELT_9MM)
+    }
+    
+    suspend fun updateBeltQuantity(beltId: String, newQuantity: Int, inventoryType: InventoryType): Result<Unit> = withContext(Dispatchers.IO) {
         if (sheets == null) {
             return@withContext Result.failure(Exception(initializationError ?: "Google Sheets service not initialized"))
         }
@@ -77,7 +83,7 @@ class SheetsService(credentialsStream: InputStream) {
             val rowNumber = index + 2
             
             // Update the quantity (column B)
-            val range = "$sheetName!B${rowNumber}"
+            val range = "${inventoryType.sheetName}!B${rowNumber}"
             val valueRange = ValueRange()
                 .setValues(listOf(listOf(newQuantity.toString())))
             
@@ -92,21 +98,35 @@ class SheetsService(credentialsStream: InputStream) {
         }
     }
     
-    suspend fun checkoutBelt(beltId: String): Result<Unit> {
-        val belt = getAllBelts().getOrNull()?.find { it.id == beltId }
+    suspend fun updateBeltQuantity(beltId: String, newQuantity: Int): Result<Unit> {
+        // For backward compatibility
+        return updateBeltQuantity(beltId, newQuantity, InventoryType.BELT_9MM)
+    }
+    
+    suspend fun checkoutBelt(beltId: String, inventoryType: InventoryType): Result<Unit> {
+        val belt = getAllBeltsByType(inventoryType).getOrNull()?.find { it.id == beltId }
             ?: return Result.failure(Exception("Belt not found"))
         
         if (belt.quantity > 0) {
-            return updateBeltQuantity(beltId, belt.quantity - 1)
+            return updateBeltQuantity(beltId, belt.quantity - 1, inventoryType)
         } else {
-            return Result.failure(Exception("No belts available"))
+            return Result.failure(Exception("No items available"))
         }
     }
     
-    suspend fun checkinBelt(beltId: String): Result<Unit> {
-        val belt = getAllBelts().getOrNull()?.find { it.id == beltId }
+    suspend fun checkinBelt(beltId: String, inventoryType: InventoryType): Result<Unit> {
+        val belt = getAllBeltsByType(inventoryType).getOrNull()?.find { it.id == beltId }
             ?: return Result.failure(Exception("Belt not found"))
         
-        return updateBeltQuantity(beltId, belt.quantity + 1)
+        return updateBeltQuantity(beltId, belt.quantity + 1, inventoryType)
+    }
+    
+    suspend fun checkoutBelt(beltId: String): Result<Unit> {
+        return checkoutBelt(beltId, InventoryType.BELT_9MM)
+    }
+    
+    suspend fun checkinBelt(beltId: String): Result<Unit> {
+        return checkinBelt(beltId, InventoryType.BELT_9MM)
     }
 }
+

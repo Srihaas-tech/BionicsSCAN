@@ -5,5 +5,6 @@ data class Belt(
     val length: Int,
     val quantity: Int,
     val barcode: String,
+    val inventoryType: InventoryType = InventoryType.BELT_9MM,
     val lastUpdated: Long = System.currentTimeMillis()
 )

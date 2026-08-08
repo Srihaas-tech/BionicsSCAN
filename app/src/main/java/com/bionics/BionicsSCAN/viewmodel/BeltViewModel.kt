@@ -3,6 +3,7 @@ package com.bionics.BionicsSCAN.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bionics.BionicsSCAN.data.Belt
+import com.bionics.BionicsSCAN.data.InventoryType
 import com.bionics.BionicsSCAN.data.LocalBeltRepository
 import com.bionics.BionicsSCAN.service.SheetsService
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,9 @@ class BeltViewModel(
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
     
+    private val _selectedInventoryType = MutableStateFlow(InventoryType.BELT_9MM)
+    val selectedInventoryType: StateFlow<InventoryType> = _selectedInventoryType.asStateFlow()
+    
     private val syncInterval = 2000L // 2 seconds in milliseconds
     
     init {
@@ -48,13 +52,18 @@ class BeltViewModel(
         }
     }
     
+    fun setInventoryType(inventoryType: InventoryType) {
+        _selectedInventoryType.value = inventoryType
+        loadBelts()
+    }
+    
     fun loadBelts() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             
             localRepository.getAllBelts().collect { belts ->
-                _belts.value = belts
+                _belts.value = belts.filter { it.inventoryType == _selectedInventoryType.value }
             }
             
             _isLoading.value = false
@@ -69,7 +78,7 @@ class BeltViewModel(
         viewModelScope.launch {
             _isSyncing.value = true
             
-            sheetsService.getAllBelts()
+            sheetsService.getAllBeltsByType(_selectedInventoryType.value)
                 .onSuccess { remoteBelts ->
                     // Update local repository with remote data
                     remoteBelts.forEach { remoteBelt ->
@@ -111,17 +120,18 @@ class BeltViewModel(
             
             if (localSuccess) {
                 // Update spreadsheet if configured
-                sheetsService?.checkoutBelt(beltId)
+                sheetsService?.checkoutBelt(beltId, _selectedInventoryType.value)
                     ?.onFailure { exception ->
                         _error.value = "Local checkout succeeded but spreadsheet update failed: ${exception.message}"
                     }
                 
                 // Immediately update UI with latest data
                 val updatedBelts = localRepository.getAllBeltsList()
+                    .filter { it.inventoryType == _selectedInventoryType.value }
                 _belts.value = updatedBelts
                 _scannedBarcode.value = null
             } else {
-                _error.value = "Failed to checkout belt"
+                _error.value = "Failed to checkout item"
             }
             
             _isLoading.value = false
@@ -138,17 +148,18 @@ class BeltViewModel(
             
             if (localSuccess) {
                 // Update spreadsheet if configured
-                sheetsService?.checkinBelt(beltId)
+                sheetsService?.checkinBelt(beltId, _selectedInventoryType.value)
                     ?.onFailure { exception ->
                         _error.value = "Local checkin succeeded but spreadsheet update failed: ${exception.message}"
                     }
                 
                 // Immediately update UI with latest data
                 val updatedBelts = localRepository.getAllBeltsList()
+                    .filter { it.inventoryType == _selectedInventoryType.value }
                 _belts.value = updatedBelts
                 _scannedBarcode.value = null
             } else {
-                _error.value = "Failed to checkin belt"
+                _error.value = "Failed to checkin item"
             }
             
             _isLoading.value = false
