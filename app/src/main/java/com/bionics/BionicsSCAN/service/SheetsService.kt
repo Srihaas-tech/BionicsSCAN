@@ -69,29 +69,24 @@ class SheetsService(credentialsStream: InputStream) {
         }
         
         try {
-            // First, get all belts to find the row index
-            val response = sheets!!.spreadsheets().values()
-                .get(spreadsheetId, "$sheetName!A2:B")
+            // Extract the index from beltId (e.g., "belt_5" -> 5)
+            val index = beltId.substringAfterLast("_").toIntOrNull()
+                ?: return@withContext Result.failure(Exception("Invalid belt ID"))
+            
+            // The row number is index + 2 (since data starts at row 2, and 0-based indexing)
+            val rowNumber = index + 2
+            
+            // Update the quantity (column B)
+            val range = "$sheetName!B${rowNumber}"
+            val valueRange = ValueRange()
+                .setValues(listOf(listOf(newQuantity.toString())))
+            
+            sheets!!.spreadsheets().values()
+                .update(spreadsheetId, range, valueRange)
+                .setValueInputOption("RAW")
                 .execute()
             
-            val values = response.getValues()
-            val rowIndex = values?.indexOfFirst { it[0].toString().toInt() == beltId.substringAfterLast("_").toInt() }
-            
-            if (rowIndex != null && rowIndex >= 0) {
-                // Update the quantity (column B, which is index 1)
-                val range = "$sheetName!B${rowIndex + 2}"
-                val valueRange = ValueRange()
-                    .setValues(listOf(listOf(newQuantity.toString())))
-                
-                sheets!!.spreadsheets().values()
-                    .update(spreadsheetId, range, valueRange)
-                    .setValueInputOption("RAW")
-                    .execute()
-                
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception("Belt not found"))
-            }
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
