@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
@@ -206,13 +207,19 @@ fun BarcodeLabelItem(belt: Belt) {
             
             val barcode = BarcodeGenerator.generateCode128Barcode(belt.barcode)
             barcode?.let {
-                Image(
-                    bitmap = it.asImageBitmap(),
-                    contentDescription = "Barcode for ${belt.barcode}",
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(80.dp)
-                )
+                        .height(80.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        bitmap = it.asImageBitmap(),
+                        contentDescription = "Barcode for ${belt.barcode}",
+                        modifier = Modifier.widthIn(max = 300.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
             
             Text(
