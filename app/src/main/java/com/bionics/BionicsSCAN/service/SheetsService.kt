@@ -13,7 +13,7 @@ import java.io.InputStream
 class SheetsService(credentialsStream: InputStream) {
     
     private val spreadsheetId: String = "1Wpepi5tsE-ykRRbyr1Pmk4KWreHNp-jAN8OoycMNLn8"
-    private val sheetName: String = "Sheet1"
+    private val sheetName: String = "'Belt Inventory 9mm'"
     
     // Read credentials into a byte array to prevent stream closure issues
     private val credentialsBytes: ByteArray = credentialsStream.readBytes()
