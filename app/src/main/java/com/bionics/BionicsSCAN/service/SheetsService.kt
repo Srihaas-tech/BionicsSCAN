@@ -50,7 +50,7 @@ class SheetsService(credentialsStream: InputStream) {
             val values = response.getValues()
             val belts = values?.mapIndexed { index, row ->
                 Belt(
-                    id = "belt_${index}",
+                    id = "${index + 1}",
                     length = row[0].toString().toInt(),
                     quantity = row[1].toString().toInt(),
                     barcode = "BELT-${row[0]}"
@@ -69,8 +69,8 @@ class SheetsService(credentialsStream: InputStream) {
         }
         
         try {
-            // Extract the index from beltId (e.g., "belt_5" -> 5)
-            val index = beltId.substringAfterLast("_").toIntOrNull()
+            // Extract the index from beltId (e.g., "5" -> index 4)
+            val index = beltId.toIntOrNull()?.minus(1)
                 ?: return@withContext Result.failure(Exception("Invalid belt ID"))
             
             // The row number is index + 2 (since data starts at row 2, and 0-based indexing)
