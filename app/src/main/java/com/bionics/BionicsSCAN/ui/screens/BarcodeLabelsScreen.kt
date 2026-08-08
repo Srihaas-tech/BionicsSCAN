@@ -40,6 +40,7 @@ fun BarcodeLabelsScreen(
     onBackClick: () -> Unit
 ) {
     val belts by viewModel.belts.collectAsState()
+    val selectedType by viewModel.selectedInventoryType.collectAsState()
     val context = LocalContext.current
     
     Scaffold(
@@ -53,29 +54,62 @@ fun BarcodeLabelsScreen(
                 },
                 actions = {
                     IconButton(onClick = {
-                        printBarcodeLabels(context, belts)
+                        printBarcodeLabels(context, belts, selectedType.displayName)
                     }) {
-                        Icon(Icons.Default.Print, contentDescription = "Print All")
+                        Icon(Icons.Default.Print, contentDescription = "Print ${selectedType.displayName}")
                     }
                 }
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(belts) { belt ->
-                BarcodeLabelItem(belt = belt)
+            TabRow(
+                selectedTabIndex = com.bionics.BionicsSCAN.data.InventoryType.entries.indexOf(selectedType),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                com.bionics.BionicsSCAN.data.InventoryType.entries.forEach { type ->
+                    Tab(
+                        selected = selectedType == type,
+                        onClick = { viewModel.setInventoryType(type) },
+                        text = { Text(type.displayName, fontSize = MaterialTheme.typography.labelMedium.fontSize) }
+                    )
+                }
+            }
+            
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(belts) { belt ->
+                    BarcodeLabelItem(belt = belt)
+                }
+                
+                if (belts.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier.fillParentMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("No items found in ${selectedType.displayName}")
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-private fun printBarcodeLabels(context: Context, belts: List<Belt>) {
+private fun printBarcodeLabels(context: Context, belts: List<Belt>, typeName: String) {
+    if (belts.isEmpty()) {
+        Toast.makeText(context, "No labels to print", Toast.LENGTH_SHORT).show()
+        return
+    }
     try {
         val printManager = context.getSystemService(Context.PRINT_SERVICE) as PrintManager
         
@@ -93,7 +127,7 @@ private fun printBarcodeLabels(context: Context, belts: List<Belt>) {
                 }
                 
                 val pdfDocument = generatePdfDocument(belts)
-                val info = android.print.PrintDocumentInfo.Builder("barcode_labels.pdf")
+                val info = android.print.PrintDocumentInfo.Builder("${typeName.replace(" ", "_").lowercase()}_labels.pdf")
                     .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
                     .setPageCount(pdfDocument?.pages?.size ?: 0)
                     .build()
@@ -123,7 +157,7 @@ private fun printBarcodeLabels(context: Context, belts: List<Belt>) {
             }
         }
         
-        printManager.print("Barcode Labels", printAdapter, null)
+        printManager.print("$typeName Labels", printAdapter, null)
     } catch (e: Exception) {
         Toast.makeText(context, "Print failed: ${e.message}", Toast.LENGTH_SHORT).show()
     }
