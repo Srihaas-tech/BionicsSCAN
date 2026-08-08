@@ -21,6 +21,10 @@ fun BeltDetailScreen(
 ) {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val belts by viewModel.belts.collectAsState()
+    
+    // Get the updated belt from the ViewModel
+    val currentBelt = belts.find { it.id == belt.id } ?: belt
     
     Scaffold(
         topBar = {
@@ -56,10 +60,10 @@ fun BeltDetailScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Divider()
-                    InfoRow("Length", "${belt.length} mm")
-                    InfoRow("Barcode", belt.barcode)
-                    InfoRow("Quantity", belt.quantity.toString())
-                    InfoRow("Status", if (belt.quantity > 0) "Available" else "Out of Stock")
+                    InfoRow("Length", "${currentBelt.length} mm")
+                    InfoRow("Barcode", currentBelt.barcode)
+                    InfoRow("Quantity", currentBelt.quantity.toString())
+                    InfoRow("Status", if (currentBelt.quantity > 0) "Available" else "Out of Stock")
                 }
             }
             
@@ -68,8 +72,8 @@ fun BeltDetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Button(
-                    onClick = { viewModel.checkoutBelt(belt.id) },
-                    enabled = belt.quantity > 0 && !isLoading,
+                    onClick = { viewModel.checkoutBelt(currentBelt.id) },
+                    enabled = currentBelt.quantity > 0 && !isLoading,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
@@ -86,7 +90,7 @@ fun BeltDetailScreen(
                 }
                 
                 Button(
-                    onClick = { viewModel.checkinBelt(belt.id) },
+                    onClick = { viewModel.checkinBelt(currentBelt.id) },
                     enabled = !isLoading,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(
