@@ -14,7 +14,7 @@ object BarcodeGenerator {
     fun generateBarcodeCode(inventoryType: InventoryType, size: Int): String {
         val prefix = when (inventoryType) {
             InventoryType.BELT_9MM -> "B9"
-            InventoryType.BELT_15MM -> "B15"
+            InventoryType.BELT_15MM -> "b15"
             InventoryType.GEAR -> "GR"
             InventoryType.SPROCKET -> "SP"
         }

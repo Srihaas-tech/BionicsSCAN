@@ -177,7 +177,19 @@ private fun generatePdfDocument(belts: List<Belt>): PdfDocument? {
         // Draw belt name
         paint.style = android.graphics.Paint.Style.FILL
         textPaint.textSize = 12f
-        canvas.drawText("Belt: ${belt.length}mm", xPos + 5f, yPos + 18f, textPaint)
+        val typeLabel = when (belt.inventoryType) {
+            com.bionics.BionicsSCAN.data.InventoryType.BELT_9MM -> "Belt 9mm"
+            com.bionics.BionicsSCAN.data.InventoryType.BELT_15MM -> "Belt 15mm"
+            com.bionics.BionicsSCAN.data.InventoryType.GEAR -> "Gear"
+            com.bionics.BionicsSCAN.data.InventoryType.SPROCKET -> "Sprocket"
+        }
+        val unit = when (belt.inventoryType) {
+            com.bionics.BionicsSCAN.data.InventoryType.BELT_9MM,
+            com.bionics.BionicsSCAN.data.InventoryType.BELT_15MM -> "mm"
+            com.bionics.BionicsSCAN.data.InventoryType.GEAR,
+            com.bionics.BionicsSCAN.data.InventoryType.SPROCKET -> "T"
+        }
+        canvas.drawText("$typeLabel: ${belt.length}$unit", xPos + 5f, yPos + 18f, textPaint)
         
         // Keep the barcode inside the cut border.
         val barcode = BarcodeGenerator.generateCode128Barcode(
@@ -222,8 +234,14 @@ fun BarcodeLabelItem(belt: Belt) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val unit = when (belt.inventoryType) {
+                com.bionics.BionicsSCAN.data.InventoryType.BELT_9MM,
+                com.bionics.BionicsSCAN.data.InventoryType.BELT_15MM -> "mm"
+                com.bionics.BionicsSCAN.data.InventoryType.GEAR,
+                com.bionics.BionicsSCAN.data.InventoryType.SPROCKET -> "T"
+            }
             Text(
-                text = "Belt Length: ${belt.length}mm",
+                text = "${belt.inventoryType.displayName}: ${belt.length}$unit",
                 fontWeight = FontWeight.Bold
             )
             
