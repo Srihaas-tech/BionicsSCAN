@@ -1,6 +1,7 @@
 package com.bionics.BionicsSCAN.utils
 
 import android.graphics.Bitmap
+import com.bionics.BionicsSCAN.data.InventoryType
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.WriterException
@@ -9,6 +10,16 @@ import com.google.zxing.oned.Code128Writer
 import java.util.EnumMap
 
 object BarcodeGenerator {
+    
+    fun generateBarcodeCode(inventoryType: InventoryType, size: Int): String {
+        val prefix = when (inventoryType) {
+            InventoryType.BELT_9MM -> "B9"
+            InventoryType.BELT_15MM -> "B15"
+            InventoryType.GEAR -> "GR"
+            InventoryType.SPROCKET -> "SP"
+        }
+        return "$prefix-$size"
+    }
     
     fun generateCode128Barcode(
         content: String,

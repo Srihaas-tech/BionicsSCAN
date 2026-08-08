@@ -2,6 +2,7 @@ package com.bionics.BionicsSCAN.service
 
 import com.bionics.BionicsSCAN.data.Belt
 import com.bionics.BionicsSCAN.data.InventoryType
+import com.bionics.BionicsSCAN.utils.BarcodeGenerator
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.sheets.v4.Sheets
@@ -49,11 +50,16 @@ class SheetsService(credentialsStream: InputStream) {
             
             val values = response.getValues()
             val items = values?.mapIndexed { index, row ->
+                val size = row[0].toString().toInt()
                 Belt(
                     id = "${index + 1}",
-                    length = row[0].toString().toInt(),
+                    length = size,
                     quantity = row[1].toString().toInt(),
-                    barcode = if (row.size > 2) row[2].toString() else "ITEM-${row[0]}",
+                    barcode = if (row.size > 2 && row[2].toString().isNotEmpty()) {
+                        row[2].toString()
+                    } else {
+                        BarcodeGenerator.generateBarcodeCode(inventoryType, size)
+                    },
                     inventoryType = inventoryType
                 )
             } ?: emptyList()

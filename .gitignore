@@ -14,3 +14,5 @@
 .cxx
 local.properties
 app/src/main/assets/credentials.json
+/app/build/outputs/apkrelease/app-release-unsigned.apk
+
