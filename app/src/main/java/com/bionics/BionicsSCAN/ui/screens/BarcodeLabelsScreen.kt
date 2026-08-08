@@ -142,10 +142,17 @@ private fun generatePdfDocument(belts: List<Belt>): PdfDocument? {
     
     var xPos = 20f
     var yPos = 20f
-    val labelWidth = 275f
+    val labelWidth = 260f
     val labelHeight = 100f
     val labelsPerRow = 2
-    val margin = 20f
+    val margin = 15f
+    val barcodeHorizontalPadding = 20f
+    val barcodeHeight = 50f
+    val barcodeMaxWidth = labelWidth - (barcodeHorizontalPadding * 2f)
+    val barcodePaint = android.graphics.Paint().apply {
+        isAntiAlias = false
+        isFilterBitmap = false
+    }
     
     belts.forEachIndexed { index, belt ->
         if (index > 0 && index % labelsPerRow == 0) {
@@ -172,10 +179,25 @@ private fun generatePdfDocument(belts: List<Belt>): PdfDocument? {
         textPaint.textSize = 12f
         canvas.drawText("Belt: ${belt.length}mm", xPos + 5f, yPos + 18f, textPaint)
         
-        // Draw Code128 barcode with just the belt length (shorter content prevents squishing)
-        val barcode = BarcodeGenerator.generateCode128Barcode(belt.length.toString(), 180, 60)
+        // Keep the barcode inside the cut border.
+        val barcode = BarcodeGenerator.generateCode128Barcode(
+            content = belt.barcode,
+            width = barcodeMaxWidth.toInt(),
+            height = barcodeHeight.toInt()
+        )
         barcode?.let {
-            canvas.drawBitmap(it, xPos + 47f, yPos + 25f, paint)
+            val scale = minOf(1f, barcodeMaxWidth / it.width.toFloat())
+            val renderedWidth = it.width * scale
+            val barcodeLeft = xPos + (labelWidth - renderedWidth) / 2f
+            val barcodeTop = yPos + 28f
+            val source = android.graphics.Rect(0, 0, it.width, it.height)
+            val destination = android.graphics.RectF(
+                barcodeLeft,
+                barcodeTop,
+                barcodeLeft + renderedWidth,
+                barcodeTop + barcodeHeight
+            )
+            canvas.drawBitmap(it, source, destination, barcodePaint)
         }
         
         // Draw the full barcode text below

@@ -10,29 +10,40 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 
-class SheetsService(private val credentialsStream: InputStream) {
+class SheetsService(credentialsStream: InputStream) {
     
-    private val spreadsheetId: String = "1Wr_n0T0EPrmFgwfx3-Yh7oRMalMUUE5Lya4uo5zjN6A"
+    private val spreadsheetId: String = "1Wpepi5tsE-ykRRbyr1Pmk4KWreHNp-jAN8OoycMNLn8"
     private val sheetName: String = "Sheet1"
     
-    private val sheets: Sheets by lazy {
-        val transport = GoogleNetHttpTransport.newTrustedTransport()
-        val jsonFactory = GsonFactory.getDefaultInstance()
-        
-        // Note: For production, you should use proper OAuth2 flow
-        // This is a simplified version using service account credentials
-        val credential = com.google.api.client.googleapis.auth.oauth2.GoogleCredential
-            .fromStream(credentialsStream)
-            .createScoped(listOf(SheetsScopes.SPREADSHEETS))
-        
-        Sheets.Builder(transport, jsonFactory, credential)
-            .setApplicationName("BionicsSCAN")
-            .build()
+    // Read credentials into a byte array to prevent stream closure issues
+    private val credentialsBytes: ByteArray = credentialsStream.readBytes()
+    private var initializationError: String? = null
+    
+    private val sheets: Sheets? by lazy {
+        try {
+            val transport = GoogleNetHttpTransport.newTrustedTransport()
+            val jsonFactory = GsonFactory.getDefaultInstance()
+            
+            val credential = com.google.api.client.googleapis.auth.oauth2.GoogleCredential
+                .fromStream(credentialsBytes.inputStream())
+                .createScoped(listOf(SheetsScopes.SPREADSHEETS))
+            
+            Sheets.Builder(transport, jsonFactory, credential)
+                .setApplicationName("BionicsSCAN")
+                .build()
+        } catch (e: Exception) {
+            initializationError = "Invalid credentials: ${e.message}"
+            null
+        }
     }
     
     suspend fun getAllBelts(): Result<List<Belt>> = withContext(Dispatchers.IO) {
+        if (sheets == null) {
+            return@withContext Result.failure(Exception(initializationError ?: "Google Sheets service not initialized"))
+        }
+        
         try {
-            val response = sheets.spreadsheets().values()
+            val response = sheets!!.spreadsheets().values()
                 .get(spreadsheetId, "$sheetName!A2:D")
                 .execute()
             
@@ -53,9 +64,13 @@ class SheetsService(private val credentialsStream: InputStream) {
     }
     
     suspend fun updateBeltQuantity(beltId: String, newQuantity: Int): Result<Unit> = withContext(Dispatchers.IO) {
+        if (sheets == null) {
+            return@withContext Result.failure(Exception(initializationError ?: "Google Sheets service not initialized"))
+        }
+        
         try {
             // First, find the row index for this belt
-            val response = sheets.spreadsheets().values()
+            val response = sheets!!.spreadsheets().values()
                 .get(spreadsheetId, "$sheetName!A2:D")
                 .execute()
             
@@ -68,7 +83,7 @@ class SheetsService(private val credentialsStream: InputStream) {
                 val valueRange = ValueRange()
                     .setValues(listOf(listOf(newQuantity.toString())))
                 
-                sheets.spreadsheets().values()
+                sheets!!.spreadsheets().values()
                     .update(spreadsheetId, range, valueRange)
                     .setValueInputOption("RAW")
                     .execute()

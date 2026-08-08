@@ -32,7 +32,7 @@ class BeltViewModel(
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
     
-    private val syncInterval = 60000L // 1 minute in milliseconds
+    private val syncInterval = 2000L // 2 seconds in milliseconds
     
     init {
         loadBelts()
@@ -63,13 +63,11 @@ class BeltViewModel(
     
     fun syncWithSpreadsheet() {
         if (sheetsService == null) {
-            _error.value = "Google Sheets not configured"
             return
         }
         
         viewModelScope.launch {
             _isSyncing.value = true
-            _error.value = null
             
             sheetsService.getAllBelts()
                 .onSuccess { remoteBelts ->
@@ -81,9 +79,14 @@ class BeltViewModel(
                         )
                     }
                     _belts.value = remoteBelts
+                    _error.value = null
                 }
                 .onFailure { exception ->
-                    _error.value = "Sync failed: ${exception.message}"
+                    // Only show error if credentials were initialized but sync failed
+                    // Don't show error for invalid credentials (silently fail and use local data)
+                    if (exception.message?.contains("Invalid credentials") != true) {
+                        _error.value = "Sync failed: ${exception.message}"
+                    }
                 }
             
             _isSyncing.value = false
@@ -113,7 +116,9 @@ class BeltViewModel(
                         _error.value = "Local checkout succeeded but spreadsheet update failed: ${exception.message}"
                     }
                 
-                loadBelts()
+                // Immediately update UI with latest data
+                val updatedBelts = localRepository.getAllBeltsList()
+                _belts.value = updatedBelts
                 _scannedBarcode.value = null
             } else {
                 _error.value = "Failed to checkout belt"
@@ -138,7 +143,9 @@ class BeltViewModel(
                         _error.value = "Local checkin succeeded but spreadsheet update failed: ${exception.message}"
                     }
                 
-                loadBelts()
+                // Immediately update UI with latest data
+                val updatedBelts = localRepository.getAllBeltsList()
+                _belts.value = updatedBelts
                 _scannedBarcode.value = null
             } else {
                 _error.value = "Failed to checkin belt"

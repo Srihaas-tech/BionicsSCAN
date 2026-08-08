@@ -53,6 +53,8 @@ class LocalBeltRepository {
         emit(belts.values.toList())
     }
     
+    fun getAllBeltsList(): List<Belt> = belts.values.toList()
+    
     fun getBeltById(id: String): Belt? = belts[id]
     
     fun getBeltByBarcode(barcode: String): Belt? {

@@ -20,14 +20,16 @@ object BarcodeGenerator {
             val hints = EnumMap<EncodeHintType, Any>(EncodeHintType::class.java)
             hints[EncodeHintType.MARGIN] = 2
             
-            // Use a fixed, generous width to ensure readability
-            val actualWidth = maxOf(width, 300)
+            // Use the requested width. ZXing expands it only when the data needs more modules.
+            val bitMatrix = writer.encode(content, BarcodeFormat.CODE_128, width, height, hints)
             
-            val bitMatrix = writer.encode(content, BarcodeFormat.CODE_128, actualWidth, height, hints)
-            
-            val bitmap = Bitmap.createBitmap(actualWidth, height, Bitmap.Config.ARGB_8888)
-            for (x in 0 until actualWidth) {
-                for (y in 0 until height) {
+            val bitmap = Bitmap.createBitmap(
+                bitMatrix.width,
+                bitMatrix.height,
+                Bitmap.Config.ARGB_8888
+            )
+            for (x in 0 until bitMatrix.width) {
+                for (y in 0 until bitMatrix.height) {
                     bitmap.setPixel(x, y, if (bitMatrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
                 }
             }
