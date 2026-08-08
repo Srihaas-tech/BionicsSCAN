@@ -44,16 +44,16 @@ class SheetsService(credentialsStream: InputStream) {
         
         try {
             val response = sheets!!.spreadsheets().values()
-                .get(spreadsheetId, "$sheetName!A2:D")
+                .get(spreadsheetId, "$sheetName!A2:B")
                 .execute()
             
             val values = response.getValues()
-            val belts = values?.map { row ->
+            val belts = values?.mapIndexed { index, row ->
                 Belt(
-                    id = row[0].toString(),
-                    length = row[1].toString().toInt(),
-                    quantity = row[2].toString().toInt(),
-                    barcode = row[3].toString()
+                    id = "belt_${index}",
+                    length = row[0].toString().toInt(),
+                    quantity = row[1].toString().toInt(),
+                    barcode = "BELT-${row[0]}"
                 )
             } ?: emptyList()
             
@@ -69,17 +69,17 @@ class SheetsService(credentialsStream: InputStream) {
         }
         
         try {
-            // First, find the row index for this belt
+            // First, get all belts to find the row index
             val response = sheets!!.spreadsheets().values()
-                .get(spreadsheetId, "$sheetName!A2:D")
+                .get(spreadsheetId, "$sheetName!A2:B")
                 .execute()
             
             val values = response.getValues()
-            val rowIndex = values?.indexOfFirst { it[0].toString() == beltId }
+            val rowIndex = values?.indexOfFirst { it[0].toString().toInt() == beltId.substringAfterLast("_").toInt() }
             
             if (rowIndex != null && rowIndex >= 0) {
-                // Update the quantity (column C, which is index 2)
-                val range = "$sheetName!C${rowIndex + 2}"
+                // Update the quantity (column B, which is index 1)
+                val range = "$sheetName!B${rowIndex + 2}"
                 val valueRange = ValueRange()
                     .setValues(listOf(listOf(newQuantity.toString())))
                 
