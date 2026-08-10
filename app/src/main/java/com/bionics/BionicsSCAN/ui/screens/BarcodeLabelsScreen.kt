@@ -211,12 +211,7 @@ private fun generatePdfDocument(belts: List<Belt>): PdfDocument? {
         // Draw belt name
         paint.style = android.graphics.Paint.Style.FILL
         textPaint.textSize = 12f
-        val typeLabel = when (belt.inventoryType) {
-            com.bionics.BionicsSCAN.data.InventoryType.BELT_9MM -> "Belt 9mm"
-            com.bionics.BionicsSCAN.data.InventoryType.BELT_15MM -> "Belt 15mm"
-            com.bionics.BionicsSCAN.data.InventoryType.GEAR -> "Gear"
-            com.bionics.BionicsSCAN.data.InventoryType.SPROCKET -> "Sprocket"
-        }
+        val typeLabel = belt.inventoryType.displayName.removeSuffix("s").removeSuffix(" Belts")
         val unit = when (belt.inventoryType) {
             com.bionics.BionicsSCAN.data.InventoryType.BELT_9MM,
             com.bionics.BionicsSCAN.data.InventoryType.BELT_15MM -> "mm"

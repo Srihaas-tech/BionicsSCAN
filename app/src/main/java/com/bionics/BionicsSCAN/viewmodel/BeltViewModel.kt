@@ -62,6 +62,27 @@ class BeltViewModel(
             _isLoading.value = true
             _error.value = null
             
+            // Try online first if service is available
+            if (sheetsService != null) {
+                sheetsService.getAllBeltsByType(_selectedInventoryType.value)
+                    .onSuccess { remoteBelts ->
+                        // Update local repository with remote data
+                        remoteBelts.forEach { remoteBelt ->
+                            localRepository.updateBeltQuantity(
+                                remoteBelt.id,
+                                remoteBelt.quantity
+                            )
+                        }
+                        _belts.value = remoteBelts
+                        _isLoading.value = false
+                        return@launch
+                    }
+                    .onFailure {
+                        // Fallback to local if online fails
+                    }
+            }
+            
+            // Local fallback
             localRepository.getAllBelts().collect { belts ->
                 _belts.value = belts.filter { it.inventoryType == _selectedInventoryType.value }
             }
@@ -91,10 +112,19 @@ class BeltViewModel(
                     _error.value = null
                 }
                 .onFailure { exception ->
-                    // Only show error if credentials were initialized but sync failed
-                    // Don't show error for invalid credentials (silently fail and use local data)
-                    if (exception.message?.contains("Invalid credentials") != true) {
+                    // Silent fallback to local data on network issues
+                    // Only show error if it's something other than a network/connection issue
+                    val errorMsg = exception.message ?: ""
+                    if (!errorMsg.contains("timed out") && 
+                        !errorMsg.contains("UnknownHostException") && 
+                        !errorMsg.contains("connection") &&
+                        !errorMsg.contains("Invalid credentials")) {
                         _error.value = "Sync failed: ${exception.message}"
+                    }
+                    
+                    // On failure, ensure we are showing latest local data
+                    localRepository.getAllBelts().collect { localBelts ->
+                        _belts.value = localBelts.filter { it.inventoryType == _selectedInventoryType.value }
                     }
                 }
             
@@ -115,22 +145,36 @@ class BeltViewModel(
             _isLoading.value = true
             _error.value = null
             
-            // Update local first
+            // Try online update first if primary
+            var onlineSuccess = false
+            if (sheetsService != null) {
+                sheetsService.checkoutBelt(beltId, _selectedInventoryType.value)
+                    .onSuccess {
+                        onlineSuccess = true
+                    }
+                    .onFailure { exception ->
+                        val errorMsg = exception.message ?: ""
+                        if (errorMsg.contains("timed out") || errorMsg.contains("connection") || errorMsg.contains("UnknownHostException")) {
+                            // Network error, fall back to local only and notify
+                            _error.value = "Offline mode: Saved locally. Syncing later."
+                        } else {
+                            _error.value = "Checkout failed: ${exception.message}"
+                            _isLoading.value = false
+                            return@launch
+                        }
+                    }
+            }
+            
+            // Update local repository (either as primary or as fallback/cache)
             val localSuccess = localRepository.checkoutBelt(beltId)
             
             if (localSuccess) {
-                // Update spreadsheet if configured
-                sheetsService?.checkoutBelt(beltId, _selectedInventoryType.value)
-                    ?.onFailure { exception ->
-                        _error.value = "Local checkout succeeded but spreadsheet update failed: ${exception.message}"
-                    }
-                
                 // Immediately update UI with latest data
                 val updatedBelts = localRepository.getAllBeltsList()
                     .filter { it.inventoryType == _selectedInventoryType.value }
                 _belts.value = updatedBelts
                 _scannedBarcode.value = null
-            } else {
+            } else if (!onlineSuccess) {
                 _error.value = "Failed to checkout item"
             }
             
@@ -143,22 +187,36 @@ class BeltViewModel(
             _isLoading.value = true
             _error.value = null
             
-            // Update local first
+            // Try online update first if primary
+            var onlineSuccess = false
+            if (sheetsService != null) {
+                sheetsService.checkinBelt(beltId, _selectedInventoryType.value)
+                    .onSuccess {
+                        onlineSuccess = true
+                    }
+                    .onFailure { exception ->
+                        val errorMsg = exception.message ?: ""
+                        if (errorMsg.contains("timed out") || errorMsg.contains("connection") || errorMsg.contains("UnknownHostException")) {
+                            // Network error, fall back to local only and notify
+                            _error.value = "Offline mode: Saved locally. Syncing later."
+                        } else {
+                            _error.value = "Checkin failed: ${exception.message}"
+                            _isLoading.value = false
+                            return@launch
+                        }
+                    }
+            }
+            
+            // Update local repository (either as primary or as fallback/cache)
             val localSuccess = localRepository.checkinBelt(beltId)
             
             if (localSuccess) {
-                // Update spreadsheet if configured
-                sheetsService?.checkinBelt(beltId, _selectedInventoryType.value)
-                    ?.onFailure { exception ->
-                        _error.value = "Local checkin succeeded but spreadsheet update failed: ${exception.message}"
-                    }
-                
                 // Immediately update UI with latest data
                 val updatedBelts = localRepository.getAllBeltsList()
                     .filter { it.inventoryType == _selectedInventoryType.value }
                 _belts.value = updatedBelts
                 _scannedBarcode.value = null
-            } else {
+            } else if (!onlineSuccess) {
                 _error.value = "Failed to checkin item"
             }
             
