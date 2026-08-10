@@ -13,6 +13,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.io.InputStream
 
+enum class SyncStatus {
+    ONLINE,
+    SYNCING,
+    OFFLINE
+}
+
 class BeltViewModel(
     private val localRepository: LocalBeltRepository,
     private val sheetsService: SheetsService?
@@ -30,8 +36,8 @@ class BeltViewModel(
     private val _scannedBarcode = MutableStateFlow<String?>(null)
     val scannedBarcode: StateFlow<String?> = _scannedBarcode.asStateFlow()
     
-    private val _isSyncing = MutableStateFlow(false)
-    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+    private val _syncStatus = MutableStateFlow(SyncStatus.OFFLINE)
+    val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
     
     private val _selectedInventoryType = MutableStateFlow(InventoryType.BELT_9MM)
     val selectedInventoryType: StateFlow<InventoryType> = _selectedInventoryType.asStateFlow()
@@ -64,8 +70,10 @@ class BeltViewModel(
             
             // Try online first if service is available
             if (sheetsService != null) {
+                _syncStatus.value = SyncStatus.SYNCING
                 sheetsService.getAllBeltsByType(_selectedInventoryType.value)
                     .onSuccess { remoteBelts ->
+                        _syncStatus.value = SyncStatus.ONLINE
                         // Update local repository with remote data
                         remoteBelts.forEach { remoteBelt ->
                             localRepository.updateBeltQuantity(
@@ -78,6 +86,7 @@ class BeltViewModel(
                         return@launch
                     }
                     .onFailure {
+                        _syncStatus.value = SyncStatus.OFFLINE
                         // Fallback to local if online fails
                     }
             }
@@ -93,14 +102,16 @@ class BeltViewModel(
     
     fun syncWithSpreadsheet() {
         if (sheetsService == null) {
+            _syncStatus.value = SyncStatus.OFFLINE
             return
         }
         
         viewModelScope.launch {
-            _isSyncing.value = true
+            _syncStatus.value = SyncStatus.SYNCING
             
             sheetsService.getAllBeltsByType(_selectedInventoryType.value)
                 .onSuccess { remoteBelts ->
+                    _syncStatus.value = SyncStatus.ONLINE
                     // Update local repository with remote data
                     remoteBelts.forEach { remoteBelt ->
                         localRepository.updateBeltQuantity(
@@ -112,6 +123,7 @@ class BeltViewModel(
                     _error.value = null
                 }
                 .onFailure { exception ->
+                    _syncStatus.value = SyncStatus.OFFLINE
                     // Silent fallback to local data on network issues
                     // Only show error if it's something other than a network/connection issue
                     val errorMsg = exception.message ?: ""
@@ -127,8 +139,6 @@ class BeltViewModel(
                         _belts.value = localBelts.filter { it.inventoryType == _selectedInventoryType.value }
                     }
                 }
-            
-            _isSyncing.value = false
         }
     }
     

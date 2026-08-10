@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Refresh
@@ -15,11 +16,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bionics.BionicsSCAN.data.Belt
 import com.bionics.BionicsSCAN.data.InventoryType
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
+import com.bionics.BionicsSCAN.viewmodel.SyncStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +35,7 @@ fun BeltListScreen(
     val belts by viewModel.belts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val isSyncing by viewModel.isSyncing.collectAsState()
+    val syncStatus by viewModel.syncStatus.collectAsState()
     val selectedType by viewModel.selectedInventoryType.collectAsState()
     
     Scaffold(
@@ -42,10 +45,17 @@ fun BeltListScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("FRC Inventory")
                         Spacer(modifier = Modifier.width(8.dp))
+                        
+                        val (icon, tint, description) = when (syncStatus) {
+                            SyncStatus.ONLINE -> Triple(Icons.Default.CloudDone, Color(0xFF4CAF50), "Online")
+                            SyncStatus.SYNCING -> Triple(Icons.Default.CloudSync, MaterialTheme.colorScheme.primary, "Syncing")
+                            SyncStatus.OFFLINE -> Triple(Icons.Default.CloudOff, MaterialTheme.colorScheme.error, "Offline")
+                        }
+                        
                         Icon(
-                            imageVector = if (isSyncing) Icons.Default.CloudSync else Icons.Default.CloudOff,
-                            contentDescription = if (isSyncing) "Syncing" else "Offline",
-                            tint = if (isSyncing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            imageVector = icon,
+                            contentDescription = description,
+                            tint = tint
                         )
                     }
                 },
@@ -54,7 +64,7 @@ fun BeltListScreen(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Sync Now",
-                            tint = if (isSyncing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            tint = if (syncStatus == SyncStatus.SYNCING) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Button(onClick = onLabelsClick) {

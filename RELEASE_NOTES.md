@@ -1,3 +1,72 @@
+# BionicsSCAN v1.1.0 Release Notes
+
+**Release Date:** August 9, 2026
+
+## Overview
+BionicsSCAN v1.1.0 is a major update that expands the application beyond simple belt tracking into a comprehensive FRC power transmission inventory tool. This release introduces support for 15mm belts, Gears, and Sprockets, alongside a completely overhauled synchronization engine that prioritizes cloud data while maintaining a robust offline fallback.
+
+## Features
+
+### Expanded Inventory Support
+- **9mm Belts** - Complete library of 32 sizes (180mm - 1250mm).
+- **15mm Belts** - Added 29 new sizes (250mm - 3120mm).
+- **Gears** - New category supporting 18 gear sizes (22T - 84T).
+- **Sprockets** - Initial support for common Sprocket sizes.
+- **Unified Barcode Linking** - Every item is now hard-linked to a standardized barcode format (`B9-`, `b15-`, `GR-`, `SP-`) for 100% scan accuracy.
+
+### Enhanced Synchronization Engine
+- **Online-First Logic** - The app now automatically treats Google Sheets as the source of truth, fetching live data on every tab switch.
+- **Robust Offline Fallback** - If a connection fails, the app instantly switches to the local repository, allowing checkouts to be saved locally until internet is restored.
+- **Smart Sync Status Indicator** - A new dynamic cloud icon in the top bar:
+    - 🟢 **Green (Done)**: Successfully connected and synced with the cloud.
+    - 🔵 **Blue (Syncing)**: Data transfer currently in progress.
+    - 🔴 **Red (Offline)**: Network unavailable; using local fallback data.
+
+### Barcode Label Printing v2.0
+- **4-Tab Navigation** - Organized the printing screen into categories: 9mm, 15mm, Gears, and Sprockets.
+- **Category-Specific Batching** - Print all barcodes for a specific category with one tap.
+- **Dynamic Label Formatting** - Labels now automatically display the correct units (`mm` for belts, `T` for teeth) and category names (e.g., "Gear: 48T").
+
+## Improvements & Fixes
+
+### Fixed Issues
+- ✅ **Fixed Naming Bug**: Resolved issue where the "Sprocket" tab was incorrectly labeled as "Tabs".
+- ✅ **Barcode Case-Sensitivity**: Standardized all prefixes to ensure scanning works regardless of how the barcode was generated.
+- ✅ **Improved Error Resiliency**: Network timeouts and "UnknownHostExceptions" no longer trigger popups; the app now fails over to local data silently.
+- ✅ **Fixed Inventory Overlap**: Ensured that items in different categories with the same numeric ID (e.g., 250mm belt vs 250mm 15mm belt) are tracked separately.
+
+### Performance
+- **Priority Loading**: Optimized the initial load sequence to show local data instantly while the online sync fetches in the background.
+- **PDF Optimization**: Reduced generated PDF file size for faster wireless printing.
+
+## Technical Details
+
+### Requirements
+- Android 6.0+ (API 24)
+- Google Sheets shared with service account (for Online mode)
+- **New:** `androidx.compose.material:material-icons-extended` dependency for advanced status icons.
+
+### Architecture
+- **MVVM Pattern** - Enhanced with a 3-state `SyncStatus` state machine.
+- **Google Sheets API v4** - Multi-sheet support for Gears, Sprockets, and multiple belt widths.
+
+## Spreadsheet Format
+To use the new categories, your Google Sheet should now have four tabs named exactly:
+1. `Belt Inventory 9mm`
+2. `Belt Inventory 15mm`
+3. `Gear Inventory`
+4. `Sprocket Inventory`
+
+Each tab follows the same format: **Column A (Size), Column B (Quantity), Column C (Barcode).**
+
+---
+
+**Version:** 1.1.0  
+**Build:** 2  
+**Target SDK:** Android 14 (API 36)
+
+---
+
 # BionicsSCAN v1.0.0 Release Notes
 
 **Release Date:** August 8, 2026
