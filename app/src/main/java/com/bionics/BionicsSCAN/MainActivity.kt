@@ -10,12 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
@@ -32,6 +27,7 @@ import com.bionics.BionicsSCAN.ui.screens.BeltListScreen
 import com.bionics.BionicsSCAN.ui.screens.ScanScreen
 import com.bionics.BionicsSCAN.ui.theme.BionicsSCANTheme
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     
@@ -94,6 +90,7 @@ fun AppNavigation(
     navController: NavHostController
 ) {
     var scannedBarcode by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
     
     NavHost(
         navController = navController,
@@ -122,9 +119,11 @@ fun AppNavigation(
                 },
                 onBarcodeScanned = { barcode ->
                     scannedBarcode = barcode
-                    val belt = viewModel.getBeltByBarcode(barcode)
-                    if (belt != null) {
-                        navController.navigate("belt_detail/${belt.id}")
+                    scope.launch {
+                        val belt = viewModel.getBeltByBarcode(barcode)
+                        if (belt != null) {
+                            navController.navigate("belt_detail/${belt.id}")
+                        }
                     }
                 }
             )

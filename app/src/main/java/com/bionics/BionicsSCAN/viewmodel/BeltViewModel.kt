@@ -34,6 +34,9 @@ class BeltViewModel(
     private val _selectedInventoryType = MutableStateFlow(InventoryType.BELT_9MM)
     val selectedInventoryType: StateFlow<InventoryType> = _selectedInventoryType.asStateFlow()
     
+    private val _scannedBarcode = MutableStateFlow<String?>(null)
+    val scannedBarcode: StateFlow<String?> = _scannedBarcode.asStateFlow()
+    
     val pendingCount: StateFlow<Int> = repository.getPendingCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     
@@ -87,6 +90,12 @@ class BeltViewModel(
             
             _isLoading.value = false
         }
+    }
+
+    fun loadBelts() = refreshFromBackend()
+    
+    fun onBarcodeScanned(barcode: String) {
+        _scannedBarcode.value = barcode
     }
     
     suspend fun getBeltByBarcode(barcode: String): Belt? {

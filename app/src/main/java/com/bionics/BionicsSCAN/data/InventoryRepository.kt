@@ -5,6 +5,7 @@ import com.bionics.BionicsSCAN.database.BionicsDatabase
 import com.bionics.BionicsSCAN.database.InventoryEntity
 import com.bionics.BionicsSCAN.database.PendingTransactionEntity
 import com.bionics.BionicsSCAN.network.BionicInventoryApi
+import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -75,7 +76,7 @@ class InventoryRepository(context: Context) {
             }
             
             // Single Room transaction: update quantity and insert pending transaction
-            database.runInTransaction {
+            database.withTransaction {
                 inventoryDao.updateQuantity(beltId, -1)
                 
                 val transaction = PendingTransactionEntity(
@@ -102,7 +103,7 @@ class InventoryRepository(context: Context) {
                 ?: return@withContext Result.failure(Exception("Item not found"))
             
             // Single Room transaction: update quantity and insert pending transaction
-            database.runInTransaction {
+            database.withTransaction {
                 inventoryDao.updateQuantity(beltId, 1)
                 
                 val transaction = PendingTransactionEntity(

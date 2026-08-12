@@ -2,6 +2,7 @@ package com.bionics.BionicsSCAN.sync
 
 import android.content.Context
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
@@ -27,7 +28,7 @@ class InventorySyncScheduler(private val context: Context) {
         
         workManager.enqueueUniquePeriodicWork(
             InventorySyncWorker.WORK_NAME,
-            ExistingWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.KEEP,
             periodicWorkRequest
         )
     }
