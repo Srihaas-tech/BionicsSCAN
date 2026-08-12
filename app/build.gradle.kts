@@ -1,24 +1,36 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.devtools.ksp") version "2.0.0-1.0.24"
+    kotlin("plugin.serialization") version "2.0.0"
+    alias(libs.plugins.kotlin.android)
+}
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
 }
 
 android {
     namespace = "com.bionics.BionicsSCAN"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.bionics.BionicsSCAN"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // BuildConfig fields for API configuration
+        buildConfigField("String", "BIONIC_INVENTORY_API_URL", "\"${localProperties.getProperty("BIONIC_INVENTORY_API_URL") ?: ""}\"")
+        buildConfigField("String", "BIONIC_INVENTORY_API_KEY", "\"${localProperties.getProperty("BIONIC_INVENTORY_API_KEY") ?: ""}\"")
     }
 
     buildTypes {
@@ -34,7 +46,9 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
+    
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -43,6 +57,9 @@ android {
     }
     lint {
         baseline = file("lint-baseline.xml")
+    }
+    kotlinOptions {
+        jvmTarget = "11"
     }
 }
 
@@ -69,20 +86,33 @@ dependencies {
     // ML Kit Barcode Scanning
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
     
-    // Google Sheets API
-    implementation("com.google.api-client:google-api-client:2.2.0")
-    implementation("com.google.oauth-client:google-oauth-client:1.34.1")
-    implementation("com.google.apis:google-api-services-sheets:v4-rev20220927-2.0.0")
-    
     // Barcode Generation
     implementation("com.google.zxing:core:3.5.2")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
-    
+    implementation(libs.core.ktx)
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     
     // Material Icons
     implementation("androidx.compose.material:material-icons-extended")
+    
+    // Room Database
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
+    
+    // WorkManager
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-kotlinx-serialization:1.0.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    
+    // Kotlin Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

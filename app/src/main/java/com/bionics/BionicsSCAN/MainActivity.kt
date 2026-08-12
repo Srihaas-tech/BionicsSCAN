@@ -18,20 +18,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.bionics.BionicsSCAN.data.LocalBeltRepository
-import com.bionics.BionicsSCAN.service.SheetsService
+import com.bionics.BionicsSCAN.data.InventoryRepository
+import com.bionics.BionicsSCAN.sync.InventorySyncScheduler
 import com.bionics.BionicsSCAN.ui.screens.BarcodeLabelsScreen
 import com.bionics.BionicsSCAN.ui.screens.BeltDetailScreen
 import com.bionics.BionicsSCAN.ui.screens.BeltListScreen
 import com.bionics.BionicsSCAN.ui.screens.ScanScreen
 import com.bionics.BionicsSCAN.ui.theme.BionicsSCANTheme
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     
@@ -48,17 +48,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        val repository = LocalBeltRepository()
+        val app = application as BionicsScanApplication
+        val repository = app.inventoryRepository
+        val syncScheduler = app.syncScheduler
         
-        // Try to load Google Sheets credentials
-        val sheetsService = try {
-            val credentialsStream = assets.open("credentials.json")
-            SheetsService(credentialsStream)
-        } catch (e: Exception) {
-            null // Credentials not found, will use local-only mode
+        val factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return BeltViewModel(repository, syncScheduler) as T
+            }
         }
-        
-        viewModel = BeltViewModel(repository, sheetsService)
+        viewModel = ViewModelProvider(this, factory)[BeltViewModel::class.java]
         
         setContent {
             BionicsSCANTheme {

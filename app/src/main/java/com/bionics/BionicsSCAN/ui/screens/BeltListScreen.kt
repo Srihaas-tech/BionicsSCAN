@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -37,41 +38,50 @@ fun BeltListScreen(
     val error by viewModel.error.collectAsState()
     val syncStatus by viewModel.syncStatus.collectAsState()
     val selectedType by viewModel.selectedInventoryType.collectAsState()
+    val pendingCount by viewModel.pendingCount.collectAsState()
     
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("FRC Inventory")
-                        Spacer(modifier = Modifier.width(8.dp))
-                        
-                        val (icon, tint, description) = when (syncStatus) {
-                            SyncStatus.ONLINE -> Triple(Icons.Default.CloudDone, Color(0xFF4CAF50), "Online")
-                            SyncStatus.SYNCING -> Triple(Icons.Default.CloudSync, MaterialTheme.colorScheme.primary, "Syncing")
-                            SyncStatus.OFFLINE -> Triple(Icons.Default.CloudOff, MaterialTheme.colorScheme.error, "Offline")
+                    Column {
+                        Text("Bionics Inventory", style = MaterialTheme.typography.titleLarge)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val (icon, tint, description) = when (syncStatus) {
+                                SyncStatus.ONLINE -> Triple(Icons.Default.CloudDone, Color(0xFF4CAF50), "Synced")
+                                SyncStatus.SYNCING -> Triple(Icons.Default.CloudSync, MaterialTheme.colorScheme.primary, "Syncing...")
+                                SyncStatus.OFFLINE -> Triple(Icons.Default.CloudOff, Color.Gray, "Offline")
+                                SyncStatus.PENDING_CHANGES -> Triple(Icons.Default.CloudSync, MaterialTheme.colorScheme.tertiary, "$pendingCount pending")
+                                SyncStatus.SYNC_ERROR -> Triple(Icons.Default.CloudOff, MaterialTheme.colorScheme.error, "Sync Error")
+                            }
+                            
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = tint,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = description,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = tint
+                            )
                         }
-                        
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = description,
-                            tint = tint
-                        )
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.syncWithSpreadsheet() }) {
+                    IconButton(onClick = { viewModel.refreshFromBackend() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Sync Now",
+                            contentDescription = "Refresh",
                             tint = if (syncStatus == SyncStatus.SYNCING) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    Button(onClick = onLabelsClick) {
-                        Text("Labels")
+                    IconButton(onClick = onLabelsClick) {
+                        Icon(Icons.Default.Print, contentDescription = "Labels")
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = onScanClick) {
+                    Button(onClick = onScanClick, modifier = Modifier.padding(horizontal = 8.dp)) {
                         Text("Scan")
                     }
                 }

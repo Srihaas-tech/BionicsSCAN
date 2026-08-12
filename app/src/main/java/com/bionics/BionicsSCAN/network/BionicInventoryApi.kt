@@ -1,0 +1,50 @@
+package com.bionics.BionicsSCAN.network
+
+import com.bionics.BionicsSCAN.BuildConfig
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
+
+interface BionicInventoryApi {
+    
+    @GET("inventory")
+    suspend fun getInventory(): InventoryResponseDto
+    
+    @POST("transactions")
+    suspend fun createTransaction(@Body request: TransactionRequestDto): TransactionResponseDto
+    
+    companion object {
+        private val json = Json {
+            ignoreUnknownKeys = true
+            coerceInputValues = true
+        }
+        
+        fun create(): BionicInventoryApi {
+            val loggingInterceptor = HttpLoggingInterceptor().apply {
+                level = if (BuildConfig.DEBUG) {
+                    HttpLoggingInterceptor.Level.HEADERS // Avoid logging sensitive data in body if any
+                } else {
+                    HttpLoggingInterceptor.Level.NONE
+                }
+            }
+            
+            val client = OkHttpClient.Builder()
+                .addInterceptor(BionicAuthInterceptor())
+                .addInterceptor(loggingInterceptor)
+                .build()
+            
+            return Retrofit.Builder()
+                .baseUrl(BuildConfig.BIONIC_INVENTORY_API_URL)
+                .client(client)
+                .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+                .build()
+                .create(BionicInventoryApi::class.java)
+        }
+    }
+}
