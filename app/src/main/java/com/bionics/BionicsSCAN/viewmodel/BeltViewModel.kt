@@ -42,9 +42,11 @@ class BeltViewModel(
     
     val belts: StateFlow<List<Belt>> = combine(
         _selectedInventoryType,
-        repository.getAllBelts() // Assuming repository can give all and we filter, or we use a more specific flow
+        repository.getAllBelts()
     ) { type, allBelts ->
-        allBelts.filter { it.inventoryType == type }
+        allBelts
+            .filter { it.inventoryType == type }
+            .sortedBy { it.length }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     
     init {
