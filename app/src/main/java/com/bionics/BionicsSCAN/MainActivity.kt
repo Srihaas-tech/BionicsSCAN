@@ -19,8 +19,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.bionics.BionicsSCAN.data.InventoryRepository
-import com.bionics.BionicsSCAN.sync.InventorySyncScheduler
 import com.bionics.BionicsSCAN.ui.screens.BarcodeLabelsScreen
 import com.bionics.BionicsSCAN.ui.screens.BeltDetailScreen
 import com.bionics.BionicsSCAN.ui.screens.BeltListScreen
@@ -131,7 +129,8 @@ fun AppNavigation(
         
         composable("belt_detail/{beltId}") { backStackEntry ->
             val beltId = backStackEntry.arguments?.getString("beltId") ?: return@composable
-            val belt = viewModel.belts.value.find { it.id == beltId }
+            val belts by viewModel.belts.collectAsState()
+            val belt = belts.find { it.id == beltId }
             
             if (belt != null) {
                 BeltDetailScreen(
