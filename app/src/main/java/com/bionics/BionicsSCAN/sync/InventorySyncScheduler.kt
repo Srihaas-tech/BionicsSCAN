@@ -43,13 +43,13 @@ class InventorySyncScheduler(private val context: Context) {
             .setConstraints(constraints)
             .setBackoffCriteria(
                 androidx.work.BackoffPolicy.EXPONENTIAL,
-                30, TimeUnit.SECONDS
+                10, TimeUnit.SECONDS // Reduced from 30s for faster recovery
             )
             .build()
         
         workManager.enqueueUniqueWork(
             "${InventorySyncWorker.WORK_NAME}_immediate",
-            ExistingWorkPolicy.REPLACE,
+            ExistingWorkPolicy.REPLACE, // Always replace to trigger fresh attempt
             oneTimeWorkRequest
         )
     }

@@ -2,10 +2,12 @@ package com.bionics.BionicsSCAN.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.bionics.BionicsSCAN.data.Belt
 import com.bionics.BionicsSCAN.data.InventoryRepository
 import com.bionics.BionicsSCAN.data.InventoryType
 import com.bionics.BionicsSCAN.sync.InventorySyncScheduler
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -48,6 +50,8 @@ class BeltViewModel(
             .filter { it.inventoryType == type }
             .sortedBy { it.length }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private var pollingJob: Job? = null
     
     init {
         viewModelScope.launch {
@@ -62,13 +66,38 @@ class BeltViewModel(
             pendingCount.collect { count ->
                 if (count > 0 && _syncStatus.value != SyncStatus.SYNCING) {
                     _syncStatus.value = SyncStatus.PENDING_CHANGES
-                } else if (count == 0 && _syncStatus.value == SyncStatus.PENDING_CHANGES) {
+                } else if (count == 0 && (_syncStatus.value == SyncStatus.PENDING_CHANGES || _syncStatus.value == SyncStatus.OFFLINE)) {
                     _syncStatus.value = SyncStatus.ONLINE
                 }
             }
         }
         
         syncScheduler.schedulePeriodicSync()
+        startLivePolling()
+    }
+
+    private fun startLivePolling() {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (isActive) {
+                delay(15_000) // Poll every 15 seconds for "live" feel
+                if (pendingCount.value == 0 && _syncStatus.value != SyncStatus.SYNCING) {
+                    Log.d("Sync", "Starting background poll...")
+                    repository.syncInventory()
+                        .onSuccess { 
+                            _syncStatus.value = SyncStatus.ONLINE 
+                        }
+                        .onFailure { e -> 
+                            Log.e("Sync", "Background poll failed", e)
+                        }
+                }
+            }
+        }
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        pollingJob?.cancel()
     }
     
     fun setInventoryType(inventoryType: InventoryType) {
@@ -79,15 +108,18 @@ class BeltViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _syncStatus.value = SyncStatus.SYNCING
+            Log.d("Sync", "Manual refresh started")
             
             repository.syncInventory()
                 .onSuccess {
                     _syncStatus.value = SyncStatus.ONLINE
                     _error.value = null
+                    Log.d("Sync", "Manual refresh success")
                 }
                 .onFailure { exception ->
                     _syncStatus.value = SyncStatus.SYNC_ERROR
                     _error.value = "Sync failed: ${exception.message}"
+                    Log.e("Sync", "Manual refresh failed", exception)
                 }
             
             _isLoading.value = false

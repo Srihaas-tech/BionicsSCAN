@@ -6,6 +6,7 @@ import com.bionics.BionicsSCAN.database.InventoryEntity
 import com.bionics.BionicsSCAN.database.PendingTransactionEntity
 import com.bionics.BionicsSCAN.network.BionicInventoryApi
 import androidx.room.withTransaction
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -52,14 +53,16 @@ class InventoryRepository(context: Context) {
         return pendingTransactionDao.getCountFlow()
     }
     
-    // Sync inventory from backend
     suspend fun syncInventory(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            Log.d("InventoryRepository", "Fetching inventory from backend...")
             val response = api.getInventory()
             val entities = response.inventory.map { it.toEntity() }
+            Log.d("InventoryRepository", "Received ${entities.size} items. Updating database.")
             inventoryDao.insertAll(entities)
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("InventoryRepository", "Sync failed: ${e.message}", e)
             Result.failure(e)
         }
     }
