@@ -52,6 +52,10 @@ class InventoryRepository(context: Context) {
     fun getPendingCount(): Flow<Int> {
         return pendingTransactionDao.getCountFlow()
     }
+
+    fun getPendingTransactionsForPart(partId: String): Flow<List<PendingTransactionEntity>> {
+        return pendingTransactionDao.getPendingTransactionsForPart(partId)
+    }
     
     suspend fun syncInventory(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
@@ -139,14 +143,20 @@ class InventoryRepository(context: Context) {
         }
     }
     
-    // Post transaction to backend
     suspend fun postTransaction(transaction: PendingTransactionEntity): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
                 val request = transaction.toTransactionRequest()
-                api.createTransaction(request)
+                Log.d("InventoryRepository", "Posting transaction: $request")
+                val response = api.createTransaction(request)
+                Log.d("InventoryRepository", "Transaction success: $response")
                 Result.success(Unit)
+            } catch (e: retrofit2.HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                Log.e("InventoryRepository", "HTTP Error ${e.code()}: $errorBody")
+                Result.failure(e)
             } catch (e: Exception) {
+                Log.e("InventoryRepository", "Post failed: ${e.message}", e)
                 Result.failure(e)
             }
         }

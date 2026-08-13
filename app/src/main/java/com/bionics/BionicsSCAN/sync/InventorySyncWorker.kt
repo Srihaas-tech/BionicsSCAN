@@ -22,7 +22,7 @@ class InventorySyncWorker(
                 // 1. Process all pending transactions first
                 var nextTransaction = repository.getNextPendingTransaction()
                 while (nextTransaction != null) {
-                    Log.d("InventorySyncWorker", "Processing transaction: ${nextTransaction.id}")
+                    Log.d("InventorySyncWorker", "Processing transaction localId=${nextTransaction.id} for partId=${nextTransaction.inventoryId} delta=${nextTransaction.quantityChange}")
                     val postResult = repository.postTransaction(nextTransaction)
                     if (postResult.isSuccess) {
                         Log.d("InventorySyncWorker", "Transaction success, deleting")

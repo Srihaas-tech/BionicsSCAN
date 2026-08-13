@@ -32,4 +32,7 @@ interface PendingTransactionDao {
     
     @Query("SELECT COUNT(*) FROM pending_transactions")
     fun getCountFlow(): Flow<Int>
+
+    @Query("SELECT * FROM pending_transactions WHERE inventoryId = :partId ORDER BY timestamp DESC")
+    fun getPendingTransactionsForPart(partId: String): Flow<List<PendingTransactionEntity>>
 }

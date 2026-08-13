@@ -38,11 +38,13 @@ fun InventoryEntity.toBelt(): Belt {
 // Mapping from PendingTransactionEntity to TransactionRequestDto
 fun PendingTransactionEntity.toTransactionRequest(): TransactionRequestDto {
     return TransactionRequestDto(
-        actor = "bionicsscan-android",
+        actor = "bionicsscan-android", // Explicitly set it
+        note = "", // Explicitly set to empty string instead of null
         lines = listOf(
             TransactionLineDto(
                 partId = inventoryId,
-                quantityDelta = quantityChange
+                quantityDelta = quantityChange,
+                usedIn = "" // Explicitly set to empty string instead of null
             )
         )
     )

@@ -1,29 +1,27 @@
-
 package com.bionics.BionicsSCAN.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Print
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bionics.BionicsSCAN.data.Belt
 import com.bionics.BionicsSCAN.data.InventoryType
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
 import com.bionics.BionicsSCAN.viewmodel.SyncStatus
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +29,9 @@ fun BeltListScreen(
     viewModel: BeltViewModel,
     onScanClick: () -> Unit,
     onBeltClick: (Belt) -> Unit,
-    onLabelsClick: () -> Unit
+    onLabelsClick: () -> Unit,
+    onLowStockClick: () -> Unit,
+    onOutOfStockClick: () -> Unit
 ) {
     val belts by viewModel.belts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -39,116 +39,162 @@ fun BeltListScreen(
     val syncStatus by viewModel.syncStatus.collectAsState()
     val selectedType by viewModel.selectedInventoryType.collectAsState()
     val pendingCount by viewModel.pendingCount.collectAsState()
+    val dashboardMetrics by viewModel.dashboardMetrics.collectAsState()
+    val categoryCounts by viewModel.categoryCounts.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val lastSyncTime by viewModel.lastSyncTime.collectAsState()
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { 
+            Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                // Branded Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Column {
-                        Text("Bionics Inventory", style = MaterialTheme.typography.titleLarge)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            val (icon, tint, description) = when (syncStatus) {
-                                SyncStatus.ONLINE -> Triple(Icons.Default.CloudDone, Color(0xFF4CAF50), "Synced")
-                                SyncStatus.SYNCING -> Triple(Icons.Default.CloudSync, MaterialTheme.colorScheme.primary, "Syncing...")
-                                SyncStatus.OFFLINE -> Triple(Icons.Default.CloudOff, Color.Gray, "Offline")
-                                SyncStatus.PENDING_CHANGES -> Triple(Icons.Default.CloudSync, MaterialTheme.colorScheme.tertiary, "$pendingCount pending")
-                                SyncStatus.SYNC_ERROR -> Triple(Icons.Default.CloudOff, MaterialTheme.colorScheme.error, "Sync Error")
-                            }
-                            
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = tint,
-                                modifier = Modifier.size(16.dp)
+                        Text(
+                            "Bionics 4909",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "FRC inventory",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                    Row {
+                        IconButton(onClick = onLabelsClick) {
+                            Icon(Icons.Default.Print, contentDescription = "Labels")
+                        }
+                        IconButton(
+                            onClick = onScanClick,
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = description,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = tint
+                        ) {
+                            Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan")
+                        }
+                    }
+                }
+
+                // Connection Banner
+                ConnectionBanner(
+                    syncStatus = syncStatus,
+                    pendingCount = pendingCount,
+                    lastSyncTime = lastSyncTime,
+                    onRefresh = { viewModel.refreshFromBackend() }
+                )
+                
+                Divider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+    // Dashboard Metrics
+    item {
+        DashboardSection(
+            metrics = dashboardMetrics,
+            onLowStockClick = onLowStockClick,
+            onOutOfStockClick = onOutOfStockClick
+        )
+    }
+
+            // Tabs and Search
+            item {
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    ScrollableTabRow(
+                        selectedTabIndex = InventoryType.entries.indexOf(selectedType),
+                        edgePadding = 16.dp,
+                        divider = {},
+                        containerColor = Color.Transparent
+                    ) {
+                        InventoryType.entries.forEach { type ->
+                            val count = categoryCounts[type] ?: 0
+                            Tab(
+                                selected = selectedType == type,
+                                onClick = { viewModel.setInventoryType(type) },
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(type.displayName)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Badge(
+                                            containerColor = if (selectedType == type) 
+                                                MaterialTheme.colorScheme.primary 
+                                            else 
+                                                MaterialTheme.colorScheme.surfaceVariant
+                                        ) {
+                                            Text(count.toString())
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.refreshFromBackend() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = if (syncStatus == SyncStatus.SYNCING) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    IconButton(onClick = onLabelsClick) {
-                        Icon(Icons.Default.Print, contentDescription = "Labels")
-                    }
-                    Button(onClick = onScanClick, modifier = Modifier.padding(horizontal = 8.dp)) {
-                        Text("Scan")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            TabRow(
-                selectedTabIndex = InventoryType.entries.indexOf(selectedType),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                InventoryType.entries.forEach { type ->
-                    Tab(
-                        selected = selectedType == type,
-                        onClick = { viewModel.setInventoryType(type) },
-                        text = { Text(type.displayName, fontSize = MaterialTheme.typography.labelMedium.fontSize) }
+
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.setSearchQuery(it) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        placeholder = { Text("Search by size or barcode...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = if (searchQuery.isNotEmpty()) {
+                            {
+                                IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                }
+                            }
+                        } else null,
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium
                     )
                 }
             }
             
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(0.dp)
-            ) {
-                when {
-                    isLoading -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+            if (isLoading && belts.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillParentMaxHeight(0.5f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
-                    error != null -> {
-                        Column(
-                            modifier = Modifier.align(Alignment.Center),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(error!!, color = MaterialTheme.colorScheme.error)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { viewModel.loadBelts() }) {
-                                Text("Retry")
-                            }
+                }
+            } else if (error != null && belts.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier.fillParentMaxHeight(0.5f).fillMaxWidth().padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(error!!, color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { viewModel.loadBelts() }) {
+                            Text("Retry")
                         }
                     }
-                    belts.isEmpty() -> {
-                        Text(
-                            "No items found",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                }
+            } else if (belts.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillParentMaxHeight(0.5f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("No items found", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    else -> {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(belts) { belt ->
-                                BeltItem(
-                                    belt = belt,
-                                    onClick = { onBeltClick(belt) }
-                                )
-                            }
-                        }
-                    }
+                }
+            } else {
+                items(belts, key = { it.id }) { belt ->
+                    InventoryCard(
+                        belt = belt,
+                        onClick = { onBeltClick(belt) }
+                    )
                 }
             }
         }
@@ -156,41 +202,181 @@ fun BeltListScreen(
 }
 
 @Composable
-fun BeltItem(
+fun ConnectionBanner(
+    syncStatus: SyncStatus,
+    pendingCount: Int,
+    lastSyncTime: Long?,
+    onRefresh: () -> Unit
+) {
+    val (color, label, icon) = when (syncStatus) {
+        SyncStatus.ONLINE -> Triple(Color(0xFF4CAF50), "Synced", Icons.Default.CloudDone)
+        SyncStatus.SYNCING -> Triple(MaterialTheme.colorScheme.primary, "Syncing...", Icons.Default.CloudSync)
+        SyncStatus.OFFLINE -> Triple(Color.Gray, "Offline", Icons.Default.CloudOff)
+        SyncStatus.PENDING_CHANGES -> Triple(MaterialTheme.colorScheme.tertiary, "$pendingCount pending", Icons.Default.CloudSync)
+        SyncStatus.SYNC_ERROR -> Triple(MaterialTheme.colorScheme.error, "Sync Error", Icons.Default.Warning)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.labelLarge, color = color, fontWeight = FontWeight.Bold)
+            if (lastSyncTime != null) {
+                val timeStr = SimpleDateFormat("h:mm:ss a", Locale.getDefault()).format(Date(lastSyncTime))
+                Text("Last checked: $timeStr", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        IconButton(onClick = onRefresh, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Refresh, contentDescription = "Refresh", modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+fun DashboardSection(
+    metrics: com.bionics.BionicsSCAN.viewmodel.DashboardMetrics,
+    onLowStockClick: () -> Unit,
+    onOutOfStockClick: () -> Unit
+) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            MetricCard(modifier = Modifier.weight(1f), title = "Sizes", value = metrics.totalSizes.toString(), icon = Icons.Default.Category)
+            MetricCard(modifier = Modifier.weight(1f), title = "Total units", value = metrics.totalUnits.toString(), icon = Icons.Default.Inventory)
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            MetricCard(
+                modifier = Modifier.weight(1f),
+                title = "Low stock",
+                value = metrics.lowStockCount.toString(),
+                icon = Icons.Default.TrendingDown,
+                color = Color(0xFFF44336),
+                onClick = onLowStockClick
+            )
+            MetricCard(
+                modifier = Modifier.weight(1f),
+                title = "Out of stock",
+                value = metrics.outOfStockCount.toString(),
+                icon = Icons.Default.ErrorOutline,
+                color = Color.Black,
+                onClick = onOutOfStockClick
+            )
+        }
+    }
+}
+
+@Composable
+fun MetricCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    value: String,
+    icon: ImageVector,
+    color: Color = MaterialTheme.colorScheme.onSurface,
+    onClick: (() -> Unit)? = null
+) {
+    Card(
+        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = color)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = color)
+        }
+    }
+}
+
+@Composable
+fun InventoryCard(
     belt: Belt,
     onClick: () -> Unit
 ) {
+    val unit = when (belt.inventoryType) {
+        InventoryType.BELT_9MM, InventoryType.BELT_15MM -> "mm"
+        InventoryType.GEAR, InventoryType.SPROCKET -> "T"
+    }
+
+    val typeLabel = when (belt.inventoryType) {
+        InventoryType.BELT_9MM -> "9mm Belt"
+        InventoryType.BELT_15MM -> "15mm Belt"
+        InventoryType.GEAR -> "Gear"
+        InventoryType.SPROCKET -> "Sprocket"
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = CardDefaults.outlinedCardBorder(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${belt.length}$unit",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = MaterialTheme.shapes.extraSmall
+                    ) {
+                        Text(
+                            text = typeLabel,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Length: ${belt.length}",
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Barcode: ${belt.barcode}",
-                    style = MaterialTheme.typography.bodySmall
+                    text = belt.barcode,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Text(
-                text = "Qty: ${belt.quantity}",
-                fontWeight = FontWeight.Bold,
-                color = if (belt.quantity > 0) 
-                    MaterialTheme.colorScheme.primary 
-                else 
-                    MaterialTheme.colorScheme.error
-            )
+
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = belt.quantity.toString(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = if (belt.quantity <= 0) Color.Red else MaterialTheme.colorScheme.onSurface
+                )
+                
+                val (badgeColor, badgeLabel) = when {
+                    belt.quantity <= 0 -> Color.Red to "OUT"
+                    belt.quantity <= 5 -> Color(0xFFF44336) to "LOW"
+                    else -> Color(0xFF4CAF50) to "IN STOCK"
+                }
+                
+                Text(
+                    text = badgeLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = badgeColor,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

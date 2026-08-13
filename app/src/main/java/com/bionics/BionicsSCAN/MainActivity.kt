@@ -19,10 +19,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.bionics.BionicsSCAN.ui.screens.BarcodeLabelsScreen
-import com.bionics.BionicsSCAN.ui.screens.BeltDetailScreen
-import com.bionics.BionicsSCAN.ui.screens.BeltListScreen
-import com.bionics.BionicsSCAN.ui.screens.ScanScreen
+import com.bionics.BionicsSCAN.ui.screens.*
 import com.bionics.BionicsSCAN.ui.theme.BionicsSCANTheme
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
 import kotlinx.coroutines.launch
@@ -105,6 +102,25 @@ fun AppNavigation(
                 },
                 onLabelsClick = {
                     navController.navigate("barcode_labels")
+                },
+                onLowStockClick = {
+                    navController.navigate("stock_filter/LOW_STOCK")
+                },
+                onOutOfStockClick = {
+                    navController.navigate("stock_filter/OUT_OF_STOCK")
+                }
+            )
+        }
+        
+        composable("stock_filter/{filterType}") { backStackEntry ->
+            val filterType = backStackEntry.arguments?.getString("filterType") ?: "LOW_STOCK"
+            StockFilterScreen(
+                title = if (filterType == "LOW_STOCK") "Low Stock Items" else "Out of Stock Items",
+                viewModel = viewModel,
+                filterType = filterType,
+                onBackClick = { navController.popBackStack() },
+                onBeltClick = { belt ->
+                    navController.navigate("belt_detail/${belt.id}")
                 }
             )
         }

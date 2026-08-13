@@ -42,10 +42,10 @@ data class InventoryMetadataDto(
 @Serializable
 data class TransactionRequestDto(
     @SerialName("actor")
-    val actor: String = "bionicsscan-android",
+    val actor: String,
     
     @SerialName("note")
-    val note: String? = null,
+    val note: String = "",
     
     @SerialName("lines")
     val lines: List<TransactionLineDto>
@@ -60,7 +60,7 @@ data class TransactionLineDto(
     val quantityDelta: Int,
     
     @SerialName("usedIn")
-    val usedIn: String? = null
+    val usedIn: String = ""
 )
 
 @Serializable

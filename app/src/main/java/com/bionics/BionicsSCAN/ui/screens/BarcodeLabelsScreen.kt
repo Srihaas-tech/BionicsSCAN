@@ -33,6 +33,11 @@ import com.bionics.BionicsSCAN.data.Belt
 import com.bionics.BionicsSCAN.utils.BarcodeGenerator
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
 
+import android.content.Intent
+import androidx.core.content.FileProvider
+import java.io.File
+import androidx.compose.material.icons.filled.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BarcodeLabelsScreen(
@@ -53,6 +58,11 @@ fun BarcodeLabelsScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        shareBarcodeLabels(context, belts, selectedType.displayName)
+                    }) {
+                        Icon(Icons.Default.Share, contentDescription = "Share PDF")
+                    }
                     IconButton(onClick = {
                         printBarcodeLabels(context, belts, selectedType.displayName)
                     }) {
@@ -160,6 +170,32 @@ private fun printBarcodeLabels(context: Context, belts: List<Belt>, typeName: St
         printManager.print("$typeName Labels", printAdapter, null)
     } catch (e: Exception) {
         Toast.makeText(context, "Print failed: ${e.message}", Toast.LENGTH_SHORT).show()
+    }
+}
+
+private fun shareBarcodeLabels(context: Context, belts: List<Belt>, typeName: String) {
+    if (belts.isEmpty()) {
+        Toast.makeText(context, "No labels to share", Toast.LENGTH_SHORT).show()
+        return
+    }
+    try {
+        val pdfDocument = generatePdfDocument(belts)
+        val fileName = "${typeName.replace(" ", "_").lowercase()}_labels.pdf"
+        val file = File(context.cacheDir, fileName)
+        val fileOutputStream = java.io.FileOutputStream(file)
+        pdfDocument?.writeTo(fileOutputStream)
+        pdfDocument?.close()
+        fileOutputStream.close()
+
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, "Share labels PDF"))
+    } catch (e: Exception) {
+        Toast.makeText(context, "Share failed: ${e.message}", Toast.LENGTH_SHORT).show()
     }
 }
 

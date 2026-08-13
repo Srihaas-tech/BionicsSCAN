@@ -2,6 +2,7 @@ package com.bionics.BionicsSCAN.network
 
 import com.bionics.BionicsSCAN.BuildConfig
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -20,15 +21,18 @@ interface BionicInventoryApi {
     suspend fun createTransaction(@Body request: TransactionRequestDto): TransactionResponseDto
     
     companion object {
+        @OptIn(ExperimentalSerializationApi::class)
         private val json = Json {
             ignoreUnknownKeys = true
             coerceInputValues = true
+            encodeDefaults = true
+            explicitNulls = false
         }
         
         fun create(): BionicInventoryApi {
             val loggingInterceptor = HttpLoggingInterceptor().apply {
                 level = if (BuildConfig.DEBUG) {
-                    HttpLoggingInterceptor.Level.HEADERS // Avoid logging sensitive data in body if any
+                    HttpLoggingInterceptor.Level.BODY // Changed to BODY to see error messages
                 } else {
                     HttpLoggingInterceptor.Level.NONE
                 }

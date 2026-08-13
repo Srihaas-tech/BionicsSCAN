@@ -21,7 +21,8 @@ import com.google.mlkit.vision.common.InputImage
 @Composable
 fun BarcodeScanner(
     onBarcodeDetected: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isPaused: Boolean = false
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -49,35 +50,39 @@ fun BarcodeScanner(
                 cameraProviderFuture.addListener({
                     val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
                     
-                    val preview = Preview.Builder()
-                        .build()
-                        .also {
-                            it.setSurfaceProvider(previewView.surfaceProvider)
-                        }
-                    
-                    val imageAnalyzer = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .also {
-                            it.setAnalyzer(
-                                ContextCompat.getMainExecutor(context)
-                            ) { imageProxy ->
-                                processImageProxy(imageProxy, onBarcodeDetected)
-                            }
-                        }
-                    
-                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                    
-                    try {
+                    if (isPaused) {
                         cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview,
-                            imageAnalyzer
-                        )
-                    } catch (exc: Exception) {
-                        exc.printStackTrace()
+                    } else {
+                        val preview = Preview.Builder()
+                            .build()
+                            .also {
+                                it.setSurfaceProvider(previewView.surfaceProvider)
+                            }
+                        
+                        val imageAnalyzer = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+                            .also {
+                                it.setAnalyzer(
+                                    ContextCompat.getMainExecutor(context)
+                                ) { imageProxy ->
+                                    processImageProxy(imageProxy, onBarcodeDetected)
+                                }
+                            }
+                        
+                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                        
+                        try {
+                            cameraProvider.unbindAll()
+                            cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                cameraSelector,
+                                preview,
+                                imageAnalyzer
+                            )
+                        } catch (exc: Exception) {
+                            exc.printStackTrace()
+                        }
                     }
                 }, ContextCompat.getMainExecutor(context))
             }
