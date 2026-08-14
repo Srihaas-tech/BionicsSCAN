@@ -101,14 +101,14 @@ fun BeltListScreen(
                 .padding(paddingValues),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-    // Dashboard Metrics
-    item {
-        DashboardSection(
-            metrics = dashboardMetrics,
-            onLowStockClick = onLowStockClick,
-            onOutOfStockClick = onOutOfStockClick
-        )
-    }
+            // Dashboard Metrics
+            item {
+                DashboardSection(
+                    metrics = dashboardMetrics,
+                    onLowStockClick = onLowStockClick,
+                    onOutOfStockClick = onOutOfStockClick
+                )
+            }
 
             // Tabs and Search
             item {

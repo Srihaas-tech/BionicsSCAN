@@ -1,3 +1,79 @@
+# BionicsSCAN v2.5.0 Release Notes
+
+**Release Date:** August 12, 2026
+
+## Overview
+BionicsSCAN v2.5.0 is the most significant update in the app's history. We have migrated away from Google Sheets to a custom **Bionic Inventory REST API**, transforming the app into a professional-grade, offline-first power transmission management tool. This version introduces a bi-directional synchronization engine, a completely redesigned dashboard, and a guided scanner experience.
+
+## Features
+
+### 🚀 Bionic Inventory REST API Migration
+- **REST Integration**: Replaced the legacy Google Sheets engine with a dedicated backend API for faster response times and improved reliability.
+- **Offline-First Architecture**: Uses a local **Room Database** as the primary source of truth. The app is fully functional with zero signal.
+- **Queued Transactions**: Check-ins and check-outs are queued locally and automatically replayed to the server once a connection is restored.
+- **Bi-Directional Live Sync**: 
+    - **App → Backend**: Changes sync instantly when online.
+    - **Backend → App**: Automatic background polling refreshes your inventory every 15 seconds while the app is open.
+
+### 📊 Redesigned Dashboard & UI
+- **Branded Header**: New "Bionics 4909" branding and visual hierarchy matching the web platform.
+- **Live Connection Banner**: Real-time status bar showing "Synced," "Syncing," or "Pending" counts with a "Last checked" timestamp.
+- **Dashboard Metrics**: Four new summary cards providing instant insight into:
+    - **Total Sizes** in the current category.
+    - **Total Units** currently in stock.
+    - **Low Stock** items (clickable for a filtered view).
+    - **Out of Stock** items (clickable for a filtered view).
+- **Live Search**: Integrated search bar to filter inventory by size or barcode ID instantly.
+- **Dynamic Tab Counts**: Category tabs now display the number of items they contain (e.g., "Gears [18]").
+
+### 📷 Professional Scanner Experience
+- **Visual Guides**: Added a scan frame with corner guides and an animated red scan line.
+- **Manual Lookup**: Added an offline-capable manual entry field for situations where the camera cannot scan or for quick ID lookups.
+- **Camera Controls**: Explicit "Start Camera" and "Stop Camera" buttons to manage battery and scanner state.
+
+### 🔍 Rich Item Details & History
+- **Live Barcode Rendering**: High-contrast Code 128 barcodes are now rendered directly on the detail page.
+- **Quantity Panel**: Redesigned quantity controls with dedicated "Check in" and "Check out" actions and visual status feedback.
+- **Recent Activity**: A new history section shows your local transactions and their synchronization status (e.g., "Pending sync").
+- **Type-Aware Terminology**: The UI now uses "mm" for belts and "T" (Teeth) for gears and sprockets automatically.
+
+### 📄 Barcode Label Enhancements
+- **Share & Save**: In addition to printing, you can now share the generated PDF to save it to your device or send it via email.
+
+## Improvements & Fixes
+
+### Fixed Issues
+- ✅ **Numerical Sorting**: Fixed a sorting bug where lengths were sorted alphabetically (e.g., 1250 appearing before 180).
+- ✅ **Atomic Transactions**: Ensured that local quantity updates and transaction queueing happen simultaneously to prevent data loss.
+- ✅ **Duplicate Suppression**: Implemented WorkManager unique work policies to prevent duplicate transaction replays.
+- ✅ **UI Stability**: Fixed "StateFlow.value" warnings and improved recomposition performance.
+
+### Performance
+- **Optimized Networking**: Reduced JSON payload size by omitting empty fields and using strict serialization rules.
+- **Background Sync**: Optimized retry backoff logic for faster recovery after network interruptions.
+
+## Technical Details
+
+### Requirements
+- Android 8.0+ (API 24+)
+- **Bionic Inventory API Key** (Configured in `local.properties`)
+- Internet connection (Required for initial setup and synchronization)
+
+### Architecture
+- **Language**: Kotlin 2.0
+- **UI**: Jetpack Compose (Material 3)
+- **Database**: Room Persistence Library
+- **Networking**: Retrofit 2 + OkHttp 4
+- **Sync**: WorkManager 2.9
+
+---
+
+**Version:** 2.5.0  
+**Build:** 5  
+**Target SDK:** Android 15 (API 35)
+
+---
+
 # BionicsSCAN v1.1.0 Release Notes
 
 **Release Date:** August 9, 2026

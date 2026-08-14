@@ -10,6 +10,7 @@ import com.bionics.BionicsSCAN.sync.InventorySyncScheduler
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.seconds
 
 enum class SyncStatus {
     ONLINE,
@@ -134,7 +135,7 @@ class BeltViewModel(
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             while (isActive) {
-                delay(15_000) // Poll every 15 seconds for "live" feel
+                delay(15.seconds) // Poll every 15 seconds for "live" feel
                 if (pendingCount.value == 0 && _syncStatus.value != SyncStatus.SYNCING) {
                     Log.d("Sync", "Starting background poll...")
                     repository.syncInventory()

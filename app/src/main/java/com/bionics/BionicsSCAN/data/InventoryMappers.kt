@@ -20,7 +20,7 @@ fun InventoryPartDto.toEntity(): InventoryEntity {
 fun InventoryEntity.toBelt(): Belt {
     val inventoryTypeEnum = try {
         InventoryType.valueOf(inventoryType)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         // Fallback or log error
         InventoryType.BELT_9MM 
     }
@@ -38,13 +38,13 @@ fun InventoryEntity.toBelt(): Belt {
 // Mapping from PendingTransactionEntity to TransactionRequestDto
 fun PendingTransactionEntity.toTransactionRequest(): TransactionRequestDto {
     return TransactionRequestDto(
-        actor = "bionicsscan-android", // Explicitly set it
-        note = "", // Explicitly set to empty string instead of null
+        actor = "bionicsscan-android",
+        note = null,
         lines = listOf(
             TransactionLineDto(
                 partId = inventoryId,
                 quantityDelta = quantityChange,
-                usedIn = "" // Explicitly set to empty string instead of null
+                usedIn = null
             )
         )
     )

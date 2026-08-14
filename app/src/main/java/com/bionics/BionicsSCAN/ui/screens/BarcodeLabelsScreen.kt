@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import com.bionics.BionicsSCAN.data.Belt
 import com.bionics.BionicsSCAN.utils.BarcodeGenerator
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
-
 import android.content.Intent
 import androidx.core.content.FileProvider
 import java.io.File

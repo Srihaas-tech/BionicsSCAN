@@ -45,7 +45,7 @@ data class TransactionRequestDto(
     val actor: String,
     
     @SerialName("note")
-    val note: String = "",
+    val note: String? = null,
     
     @SerialName("lines")
     val lines: List<TransactionLineDto>
@@ -60,7 +60,7 @@ data class TransactionLineDto(
     val quantityDelta: Int,
     
     @SerialName("usedIn")
-    val usedIn: String = ""
+    val usedIn: String? = null
 )
 
 @Serializable

@@ -1,11 +1,11 @@
 package com.bionics.BionicsSCAN.ui.screens
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.bionics.BionicsSCAN.data.Belt
 import com.bionics.BionicsSCAN.data.InventoryType
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
@@ -166,7 +165,7 @@ fun BeltDetailScreen(
                         ) {
                             Button(
                                 onClick = { viewModel.checkoutBelt(currentBelt.id) },
-                                enabled = currentBelt.quantity > 0 && isCheckingOut == null && isCheckingIn == null,
+                                enabled = (currentBelt.quantity > 0) && (isCheckingOut == null) && (isCheckingIn == null),
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336)),
                                 shape = MaterialTheme.shapes.medium,
@@ -233,7 +232,7 @@ fun BeltDetailScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Item Information", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        Divider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant)
                         
                         InfoRow("Category", currentBelt.inventoryType.displayName)
                         InfoRow(if (unit == "mm") "Size" else "Teeth", "${currentBelt.length}$unit")

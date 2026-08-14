@@ -25,7 +25,7 @@ interface BionicInventoryApi {
         private val json = Json {
             ignoreUnknownKeys = true
             coerceInputValues = true
-            encodeDefaults = true
+            encodeDefaults = false // Changed to false to omit nulls/defaults
             explicitNulls = false
         }
         
