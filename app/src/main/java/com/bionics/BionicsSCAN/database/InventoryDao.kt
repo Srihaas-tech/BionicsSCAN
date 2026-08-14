@@ -18,6 +18,9 @@ interface InventoryDao {
     
     @Query("SELECT * FROM inventory WHERE barcode = :barcode")
     suspend fun getInventoryByBarcode(barcode: String): InventoryEntity?
+
+    @Query("SELECT * FROM inventory WHERE UPPER(REPLACE(REPLACE(barcode, '-', ''), ' ', '')) = UPPER(REPLACE(REPLACE(:normalizedBarcode, '-', ''), ' ', '')) LIMIT 1")
+    suspend fun getInventoryByNormalizedBarcode(normalizedBarcode: String): InventoryEntity?
     
     @Query("SELECT * FROM inventory WHERE inventoryType = :type")
     fun getInventoryByType(type: String): Flow<List<InventoryEntity>>

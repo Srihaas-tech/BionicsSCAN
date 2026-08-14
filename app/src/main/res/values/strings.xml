@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">BionicsSCAN</string>
+    <string name="accessibility_service_name">BionicsSCAN Background Scanner</string>
+    <string name="accessibility_service_description">Enables hardware barcode scanners (Bluetooth/USB) to automatically wake and open items in BionicsSCAN from anywhere on your device.</string>
+    <string name="scanner_service_not_enabled_title">Background Scanner Inactive</string>
+    <string name="scanner_service_not_enabled_desc">Enable BionicsSCAN in Accessibility Settings to scan barcodes from any app or home screen.</string>
 </resources>

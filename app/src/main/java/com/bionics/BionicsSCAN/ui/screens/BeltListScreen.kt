@@ -16,8 +16,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.bionics.BionicsSCAN.data.Belt
 import com.bionics.BionicsSCAN.data.InventoryType
+import com.bionics.BionicsSCAN.service.BarcodeAccessibilityService
 import com.bionics.BionicsSCAN.viewmodel.BeltViewModel
 import com.bionics.BionicsSCAN.viewmodel.SyncStatus
 import java.text.SimpleDateFormat
@@ -33,6 +38,23 @@ fun BeltListScreen(
     onLowStockClick: () -> Unit,
     onOutOfStockClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isAccessibilityEnabled by remember { mutableStateOf(BarcodeAccessibilityService.isEnabled(context)) }
+    var isDismissed by remember { mutableStateOf(false) }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isAccessibilityEnabled = BarcodeAccessibilityService.isEnabled(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     val belts by viewModel.belts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -90,6 +112,62 @@ fun BeltListScreen(
                     lastSyncTime = lastSyncTime,
                     onRefresh = { viewModel.refreshFromBackend() }
                 )
+
+                // Background Scanner Service Setup Banner
+                if (!isAccessibilityEnabled && !isDismissed) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Sensors,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Background Scanner Inactive",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Text(
+                                    "Enable in Accessibility to scan from any app or home screen.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            FilledTonalButton(
+                                onClick = { BarcodeAccessibilityService.openAccessibilitySettings(context) },
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("Enable", style = MaterialTheme.typography.labelSmall)
+                            }
+                            IconButton(
+                                onClick = { isDismissed = true },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Dismiss",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                    }
+                }
                 
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
             }

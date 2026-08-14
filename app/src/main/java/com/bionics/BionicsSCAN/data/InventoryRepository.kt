@@ -41,10 +41,12 @@ class InventoryRepository(context: Context) {
         }
     }
     
-    // Get belt by barcode
+    // Get belt by barcode (exact or normalized)
     suspend fun getBeltByBarcode(barcode: String): Belt? {
         return withContext(Dispatchers.IO) {
-            inventoryDao.getInventoryByBarcode(barcode)?.toBelt()
+            val direct = inventoryDao.getInventoryByBarcode(barcode)
+            if (direct != null) return@withContext direct.toBelt()
+            inventoryDao.getInventoryByNormalizedBarcode(barcode)?.toBelt()
         }
     }
     

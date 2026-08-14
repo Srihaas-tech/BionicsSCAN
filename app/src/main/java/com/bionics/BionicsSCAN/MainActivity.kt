@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var viewModel: BeltViewModel
     private lateinit var navController: NavHostController
     private lateinit var hardwareScanner: HardwareBarcodeScanner
+    private var pendingScanBarcode: String? = null
     
     private val cameraPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -42,6 +43,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleScanIntent(intent)
         
         val app = application as BionicsScanApplication
         val repository = app.inventoryRepository
@@ -76,12 +78,37 @@ class MainActivity : ComponentActivity() {
                             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                         }
                     }
+
+                    // Process pending scan from cold launch
+                    LaunchedEffect(navController) {
+                        pendingScanBarcode?.let { barcode ->
+                            pendingScanBarcode = null
+                            routeHardwareScan(barcode)
+                        }
+                    }
                     
                     AppNavigation(
                         viewModel = viewModel,
                         navController = navController
                     )
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleScanIntent(intent)
+    }
+
+    private fun handleScanIntent(intent: android.content.Intent?) {
+        val barcode = intent?.getStringExtra(EXTRA_BARCODE_SCAN) ?: intent?.data?.getQueryParameter("barcode")
+        if (!barcode.isNullOrBlank()) {
+            if (::navController.isInitialized) {
+                routeHardwareScan(barcode)
+            } else {
+                pendingScanBarcode = barcode
             }
         }
     }
@@ -124,6 +151,10 @@ class MainActivity : ComponentActivity() {
                 navController.navigate("belt_detail/${belt.id}")
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_BARCODE_SCAN = "com.bionics.BionicsSCAN.EXTRA_BARCODE_SCAN"
     }
 }
 
