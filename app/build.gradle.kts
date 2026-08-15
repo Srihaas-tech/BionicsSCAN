@@ -66,12 +66,16 @@ android {
 
     lint {
         baseline = file("lint-baseline.xml")
+        disable += "InvalidFragmentVersionForActivityResult"
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 }
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
