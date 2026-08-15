@@ -11,6 +11,8 @@ import retrofit2.Retrofit
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PATCH
+import retrofit2.http.Path
 
 interface BionicInventoryApi {
     
@@ -19,6 +21,16 @@ interface BionicInventoryApi {
     
     @POST("transactions")
     suspend fun createTransaction(@Body request: TransactionRequestDto): TransactionResponseDto
+
+    /**
+     * Clear or set the description of an inventory part.
+     * Pass an empty string to clear it.
+     */
+    @PATCH("inventory/{partId}")
+    suspend fun updateDescription(
+        @Path("partId") partId: String,
+        @Body body: DescriptionUpdateDto
+    ): InventoryPartDto
     
     companion object {
         @OptIn(ExperimentalSerializationApi::class)

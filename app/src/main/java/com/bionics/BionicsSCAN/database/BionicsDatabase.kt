@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [InventoryEntity::class, PendingTransactionEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class BionicsDatabase : RoomDatabase() {
@@ -25,7 +25,9 @@ abstract class BionicsDatabase : RoomDatabase() {
                     context.applicationContext,
                     BionicsDatabase::class.java,
                     "bionics_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

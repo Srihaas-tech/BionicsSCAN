@@ -237,6 +237,7 @@ fun BeltDetailScreen(
                         InfoRow("Category", currentBelt.inventoryType.displayName)
                         InfoRow(if (unit == "mm") "Size" else "Teeth", "${currentBelt.length}$unit")
                         InfoRow("Barcode", currentBelt.barcode)
+                        InfoRow("Description", currentBelt.description)
                         InfoRow("Data source", "Bionic Inventory")
                     }
                 }

@@ -11,14 +11,17 @@ import androidx.room.PrimaryKey
 data class InventoryEntity(
     @PrimaryKey
     val id: String,
-    
+
     val length: Int,
-    
+
     val quantity: Int,
-    
+
+    // Human‑readable description of the part (e.g., "Standard 9 mm timing belt, 695 mm length")
+    val description: String = "",
+
     val barcode: String,
-    
+
     val inventoryType: String,
-    
+
     val lastUpdated: Long = System.currentTimeMillis()
 )

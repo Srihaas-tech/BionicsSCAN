@@ -4,6 +4,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class DescriptionUpdateDto(
+    @SerialName("description") val description: String = ""
+)
+
+@Serializable
 data class InventoryResponseDto(
     @SerialName("inventory")
     val inventory: List<InventoryPartDto>
@@ -71,6 +76,18 @@ data class TransactionResponseDto(
 
 @Serializable
 data class TransactionResultDto(
+
+    @Query("UPDATE inventory SET description = :desc WHERE id = :id")
+    suspend fun updateDescription(id: String, desc: String)
+
+    /**
+     * DTO for updating description of an inventory part.
+     */
+    @Serializable
+    data class DescriptionUpdateDto(
+        @SerialName("description") val description: String = ""
+    )
+
     @SerialName("transactionId")
     val transactionId: String,
     
