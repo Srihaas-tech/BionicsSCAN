@@ -4,96 +4,53 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class DescriptionUpdateDto(
+data class DescriptionRequestDto(
     @SerialName("description") val description: String = ""
 )
 
 @Serializable
 data class InventoryResponseDto(
-    @SerialName("inventory")
-    val inventory: List<InventoryPartDto>
+    @SerialName("inventory") val inventory: List<InventoryPartDto>
 )
 
 @Serializable
 data class InventoryPartDto(
-    @SerialName("id")
-    val id: String,
-    
-    @SerialName("name")
-    val name: String,
-    
-    @SerialName("mfgPartNumber")
-    val mfgPartNumber: String,
-    
-    @SerialName("description")
-    val description: String,
-    
-    @SerialName("metadata")
-    val metadata: InventoryMetadataDto,
-    
-    @SerialName("quantity")
-    val quantity: Int
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("mfgPartNumber") val mfgPartNumber: String,
+    @SerialName("description") val description: String,
+    @SerialName("metadata") val metadata: InventoryMetadataDto,
+    @SerialName("quantity") val quantity: Int
 )
 
 @Serializable
 data class InventoryMetadataDto(
-    @SerialName("inventoryType")
-    val inventoryType: String,
-    
-    @SerialName("size")
-    val size: Int
+    @SerialName("inventoryType") val inventoryType: String,
+    @SerialName("size") val size: Int
 )
 
 @Serializable
 data class TransactionRequestDto(
-    @SerialName("actor")
-    val actor: String,
-    
-    @SerialName("note")
-    val note: String? = null,
-    
-    @SerialName("lines")
-    val lines: List<TransactionLineDto>
+    @SerialName("actor") val actor: String,
+    @SerialName("note") val note: String? = null,
+    @SerialName("lines") val lines: List<TransactionLineDto>
 )
 
 @Serializable
 data class TransactionLineDto(
-    @SerialName("partId")
-    val partId: String,
-    
-    @SerialName("quantityDelta")
-    val quantityDelta: Int,
-    
-    @SerialName("usedIn")
-    val usedIn: String? = null
+    @SerialName("partId") val partId: String,
+    @SerialName("quantityDelta") val quantityDelta: Int,
+    @SerialName("usedIn") val usedIn: String? = null
 )
 
 @Serializable
 data class TransactionResponseDto(
-    @SerialName("transaction")
-    val transaction: TransactionResultDto
+    @SerialName("transaction") val transaction: TransactionResultDto
 )
 
 @Serializable
 data class TransactionResultDto(
-
-    @Query("UPDATE inventory SET description = :desc WHERE id = :id")
-    suspend fun updateDescription(id: String, desc: String)
-
-    /**
-     * DTO for updating description of an inventory part.
-     */
-    @Serializable
-    data class DescriptionUpdateDto(
-        @SerialName("description") val description: String = ""
-    )
-
-    @SerialName("transactionId")
-    val transactionId: String,
-    
-    @SerialName("recordedAt")
-    val recordedAt: String,
-    
-    @SerialName("lineCount")
-    val lineCount: Int
+    @SerialName("transactionId") val transactionId: String,
+    @SerialName("recordedAt") val recordedAt: String,
+    @SerialName("lineCount") val lineCount: Int
 )
